@@ -323,11 +323,20 @@ func checkExpression(scope *Scope, expr Expr) (sig *Signature, msgs []feedback.M
 					Classification: feedback.TypeCheckError,
 					File:           scope.File,
 					What: feedback.Selection{
-						Description: fmt.Sprintf("function `%s` expected %d arguments, received %d",
-							e.Root.Name,
-							totalExpectedParams,
+						Description: fmt.Sprintf("%d arguments passed",
 							totalGivenArgs),
-						Span: source.Span{Start: e.Pos(), End: e.End()},
+						Span: source.Span{
+							Start: e.LeftParen.Span.Start,
+							End: e.RightParen.Span.End,
+						},
+					},
+					Why: []feedback.Selection{
+						{
+							Description: fmt.Sprintf("`%s` expected %d arguments",
+								e.Root.Name,
+								totalExpectedParams),
+							Span: funcSig.Definition,
+						},
 					},
 				})
 			}
@@ -377,6 +386,11 @@ func checkExpression(scope *Scope, expr Expr) (sig *Signature, msgs []feedback.M
 func checkFunctionBody(scope *Scope, sig *Signature, expr *FuncExpr) (msgs []feedback.Message) {
 	subScope := scope.subScope()
 	paramNames := make(map[string]bool)
+
+	sig.Definition = source.Span{
+		Start: expr.Parameters.LeftParen.Span.Start,
+		End: expr.Parameters.RightParen.Span.End,
+	}
 
 	for i, param := range expr.Parameters.Fields {
 		paramName := param.Identifier.Name

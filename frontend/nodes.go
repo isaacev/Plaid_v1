@@ -197,9 +197,10 @@ func (p PrintStmt) stmtNode() {}
 
 // DispatchExpr represents a function dispatch including root and any arguments
 type DispatchExpr struct {
-	Root      *IdentExpr
-	Arguments []Expr
-	EndPos    source.Pos
+	Root       *IdentExpr
+	Arguments  []Expr
+	LeftParen  Token
+	RightParen Token
 }
 
 // Pos returns the starting source code position of this node
@@ -209,7 +210,7 @@ func (d DispatchExpr) Pos() source.Pos {
 
 // End returns the terminal source code position of this node
 func (d DispatchExpr) End() source.Pos {
-	return d.EndPos
+	return d.RightParen.Span.End
 }
 
 func (d DispatchExpr) exprNode() {}

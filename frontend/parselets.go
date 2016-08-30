@@ -387,16 +387,17 @@ func dispatchParselet(p *Parser, leftParen Token, left Node) (expr Node, msg fee
 		}
 	}
 
-	var rParen Token
+	var rightParen Token
 
-	if rParen, msg = p.Lexer.ExpectNext(TokenSymbol(")")); msg != nil {
+	if rightParen, msg = p.Lexer.ExpectNext(TokenSymbol(")")); msg != nil {
 		return nil, msg
 	}
 
 	return &DispatchExpr{
-		Root:      root,
-		Arguments: args,
-		EndPos:    rParen.Span.End,
+		Root:       root,
+		Arguments:  args,
+		LeftParen:  leftParen,
+		RightParen: rightParen,
 	}, nil
 }
 
