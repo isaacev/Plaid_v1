@@ -117,7 +117,8 @@ func stringifyNode(generic Node) string {
 			}
 		}
 
-		return fmt.Sprintf("(\"%s\" %s)",
+		return fmt.Sprintf("[%s (\"%s\" %s)]",
+			stringifyType(node),
 			node.Root.Name,
 			args)
 	case *BinaryExpr:

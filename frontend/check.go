@@ -463,6 +463,7 @@ func checkDispatchExpr(scope *Scope, expr *DispatchExpr) (sig *Signature, msgs [
 		})
 	}
 
+	expr.t = sig.Output
 	return sig, msgs
 }
 
