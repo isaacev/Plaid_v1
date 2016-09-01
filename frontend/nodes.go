@@ -357,7 +357,7 @@ func (i IdentExpr) Pos() source.Pos {
 func (i IdentExpr) End() source.Pos {
 	return source.Pos{
 		Line: i.NamePos.Line,
-		Col:  i.NamePos.Col + len(i.Name),
+		Col:  i.NamePos.Col + len(i.Name)-1,
 	}
 }
 
