@@ -391,7 +391,7 @@ func (i IntegerExpr) Pos() source.Pos {
 func (i IntegerExpr) End() source.Pos {
 	return source.Pos{
 		Line: i.Start.Line,
-		Col:  i.Start.Col + len(i.Lexeme),
+		Col:  i.Start.Col + (len(i.Lexeme)-1),
 	}
 }
 
@@ -420,7 +420,7 @@ func (i DecimalExpr) Pos() source.Pos {
 func (i DecimalExpr) End() source.Pos {
 	return source.Pos{
 		Line: i.Start.Line,
-		Col:  i.Start.Col + len(i.Lexeme),
+		Col:  i.Start.Col + (len(i.Lexeme)-1),
 	}
 }
 
@@ -458,7 +458,7 @@ func (s StringExpr) Pos() source.Pos {
 func (s StringExpr) End() source.Pos {
 	return source.Pos{
 		Line: s.Start.Line,
-		Col:  s.Start.Col + len(s.Lexeme),
+		Col:  s.Start.Col + (len(s.Lexeme)-1),
 	}
 }
 
