@@ -261,7 +261,7 @@ func letDeclarationParselet(p *Parser, letKeyword Token) (expr Node, msg feedbac
 			Classification: feedback.SyntaxError,
 			File:           p.Lexer.Scanner.File,
 			What: feedback.Selection{
-				Description: fmt.Sprintf("Left hand of declaration must be an identifier"),
+				Description: "Left hand of declaration must be an identifier",
 				Span:        source.Span{Start: left.Pos(), End: left.End()},
 			},
 		}
@@ -289,6 +289,7 @@ func letDeclarationParselet(p *Parser, letKeyword Token) (expr Node, msg feedbac
 	}
 
 	return &DeclarationStmt{
+		LetKeyword: letKeyword,
 		Assignee:   name,
 		Assignment: assignment,
 	}, nil
@@ -411,7 +412,7 @@ func functionParselet(p *Parser, fatArrow Token, group Node) (expr Node, msg fee
 			Classification: feedback.SyntaxError,
 			File:           p.Lexer.Scanner.File,
 			What: feedback.Selection{
-				Description: fmt.Sprintf("Expected field list"),
+				Description: "Expected field list",
 				Span:        source.Span{Start: group.Pos(), End: group.End()},
 			},
 		}

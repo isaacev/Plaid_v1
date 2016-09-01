@@ -13,6 +13,7 @@ type Node interface {
 // Expr represents a Node that returns a value when executed
 type Expr interface {
 	Node
+	Type() *Type
 	exprNode()
 }
 
@@ -65,6 +66,11 @@ type FuncExpr struct {
 	// analysis is performed and local variables can be easily counted
 	Locals   []*LocalRecord
 	Upvalues []*UpvalueRecord
+	t        *Type
+}
+
+func (i FuncExpr) Type() *Type {
+	return i.t
 }
 
 // Pos returns the starting source code position of this node
@@ -201,6 +207,11 @@ type DispatchExpr struct {
 	Arguments  []Expr
 	LeftParen  Token
 	RightParen Token
+	t          *Type
+}
+
+func (i DispatchExpr) Type() *Type {
+	return i.t
 }
 
 // Pos returns the starting source code position of this node
@@ -245,6 +256,11 @@ type BinaryExpr struct {
 	Operator TokenSymbol
 	Left     Expr
 	Right    Expr
+	t        *Type
+}
+
+func (b BinaryExpr) Type() *Type {
+	return b.t
 }
 
 // Pos returns the starting source code position of this node
@@ -274,6 +290,10 @@ func (t TypeAnnotationStmt) Pos() source.Pos {
 
 // End returns the terminal source code position of this node
 func (t TypeAnnotationStmt) End() source.Pos {
+	if t.Annotation == nil {
+		return t.Identifier.End()
+	}
+
 	return t.Annotation.End()
 }
 
@@ -281,13 +301,14 @@ func (t TypeAnnotationStmt) stmtNode() {}
 
 // DeclarationStmt represents the mapping of a value to a variable
 type DeclarationStmt struct {
+	LetKeyword Token
 	Assignee   *IdentExpr
 	Assignment Expr
 }
 
 // Pos returns the starting source code position of this node
 func (a DeclarationStmt) Pos() source.Pos {
-	return a.Assignee.Pos()
+	return a.LetKeyword.Span.Start
 }
 
 // End returns the terminal source code position of this node
@@ -319,6 +340,11 @@ func (a AssignmentStmt) stmtNode() {}
 type IdentExpr struct {
 	NamePos source.Pos
 	Name    string
+	t       *Type
+}
+
+func (i IdentExpr) Type() *Type {
+	return i.t
 }
 
 // Pos returns the starting source code position of this node
@@ -345,9 +371,14 @@ type Literal interface {
 
 // IntegerExpr represents an instance of an integer literal in the AST
 type IntegerExpr struct {
-	Lexeme string
-	Value  int32
-	Start  source.Pos
+	Lexeme  string
+	Value   int32
+	Start   source.Pos
+	t       *Type
+}
+
+func (i IntegerExpr) Type() *Type {
+	return i.t
 }
 
 // Pos returns the starting source code position of this node
@@ -369,9 +400,14 @@ func (i IntegerExpr) stmtNode()    {}
 
 // DecimalExpr represents an instance of a floating point literal in the AST
 type DecimalExpr struct {
-	Lexeme string
-	Value  float32
-	Start  source.Pos
+	Lexeme  string
+	Value   float32
+	Start   source.Pos
+	t       *Type
+}
+
+func (i DecimalExpr) Type() *Type {
+	return i.t
 }
 
 // Pos returns the starting source code position of this node
@@ -393,9 +429,23 @@ func (i DecimalExpr) stmtNode()    {}
 
 // StringExpr represents an instance of a string literal in the AST
 type StringExpr struct {
-	Lexeme string
-	Value  string
-	Start  source.Pos
+	Lexeme  string
+	Value   string
+	Start   source.Pos
+	t       *Type
+	casting *Type
+}
+
+func (i StringExpr) IsCast() (bool, *Type) {
+	if i.casting != nil {
+		return true, i.casting
+	}
+
+	return false, nil
+}
+
+func (i StringExpr) Type() *Type {
+	return i.t
 }
 
 // Pos returns the starting source code position of this node

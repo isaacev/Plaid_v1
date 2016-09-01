@@ -57,8 +57,14 @@ func (w Warning) Make(withColor bool) string {
 
 // Error classification constants
 const (
-	SyntaxError    string = "syntax error"
-	TypeCheckError string = "type check error"
+	IllegalStatementError    string = "illegal statement"
+	MismatchedArgumentsError string = "mismatched number of arguments"
+	MismatchedTypeError      string = "mismatched types"
+	RedeclarationError       string = "redeclared variable"
+	SyntaxError              string = "syntax error"
+	TypeCheckError           string = "type check error"
+	UndefinedTypeError       string = "undefined type"
+	UndefinedVariableError   string = "undefined variable"
 )
 
 // Error messages are more serious than warnings and typically cause the

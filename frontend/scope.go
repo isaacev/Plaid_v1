@@ -5,13 +5,13 @@ import (
 )
 
 // Scope represents the variable and type environment available at a point in
-// a program's AST. This includes type data stored in the inheritance tree and
+// a program's AST. This includes type data stored in the type table and
 // variable names/type-signatures stored in the variables table. All scopes
 // (except the global scope) have a parent scope for non-local symbol lookup
 type Scope struct {
 	File                *source.File
 	Parent              *Scope
-	inheritanceTree     *inheritanceTree
+	typeTable           *typeTable
 	variables           map[string]*Signature
 	upvalues            map[string]*UpvalueRecord
 	registeredVariables []string
@@ -84,19 +84,19 @@ func (s *Scope) lookupVariable(name string) (sig *Signature, isLocal bool) {
 
 func newGlobalScope(file *source.File) *Scope {
 	return &Scope{
-		File:            file,
-		inheritanceTree: newInheritanceTree(),
-		variables:       make(map[string]*Signature),
-		upvalues:        make(map[string]*UpvalueRecord),
+		File:      file,
+		typeTable: newTypeTable(),
+		variables: make(map[string]*Signature),
+		upvalues:  make(map[string]*UpvalueRecord),
 	}
 }
 
 func (s *Scope) subScope() *Scope {
 	return &Scope{
-		Parent:          s,
-		File:            s.File,
-		inheritanceTree: s.inheritanceTree,
-		variables:       make(map[string]*Signature),
-		upvalues:        make(map[string]*UpvalueRecord),
+		Parent:    s,
+		File:      s.File,
+		typeTable: s.typeTable,
+		variables: make(map[string]*Signature),
+		upvalues:  make(map[string]*UpvalueRecord),
 	}
 }

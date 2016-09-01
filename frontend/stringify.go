@@ -47,11 +47,15 @@ func stringifyNode(generic Node) string {
 
 		return fields + ")"
 	case *TypeAnnotationStmt:
+		var typeStr string
+
 		if node.ExplicitType {
-			return fmt.Sprintf("[%s %s]", stringifyNode(node.Identifier), stringifyNode(node.Annotation))
+			typeStr = node.Annotation.Name
+		} else {
+			typeStr = "Any"
 		}
 
-		return fmt.Sprintf("[%s %s]", stringifyNode(node.Identifier), "Any")
+		return fmt.Sprintf("[%s %s]", typeStr, node.Identifier.Name)
 	case *FunctionBody:
 		var body string
 
@@ -104,7 +108,7 @@ func stringifyNode(generic Node) string {
 		}
 	case *DeclarationStmt:
 		return fmt.Sprintf("(let \"%s\" %s)",
-			stringifyNode(node.Assignee),
+			node.Assignee.Name,
 			stringifyNode(node.Assignment))
 	case *AssignmentStmt:
 		return fmt.Sprintf("(set \"%s\" %s)",
@@ -122,21 +126,24 @@ func stringifyNode(generic Node) string {
 		}
 
 		return fmt.Sprintf("(\"%s\" %s)",
-			stringifyNode(node.Root),
+			node.Root.Name,
 			args)
 	case *BinaryExpr:
-		return fmt.Sprintf("(%s %s %s)",
+		return fmt.Sprintf("[%s (%s %s %s)]",
+			stringifyType(node),
 			string(node.Operator),
 			stringifyNode(node.Left),
 			stringifyNode(node.Right))
 	case *IdentExpr:
-		return fmt.Sprintf("%s", node.Name)
+		return fmt.Sprintf("[%s %s]",
+			stringifyType(node),
+			node.Name)
 	case *IntegerExpr:
-		return fmt.Sprintf("%d", node.Value)
+		return fmt.Sprintf("[%s %d]", stringifyType(node), node.Value)
 	case *DecimalExpr:
-		return fmt.Sprintf("%f", node.Value)
+		return fmt.Sprintf("[%s %.2f]", stringifyType(node), node.Value)
 	case *StringExpr:
-		return fmt.Sprintf("`%s`", node.Value)
+		return fmt.Sprintf("[%s `%s`]", stringifyType(node), node.Value)
 	default:
 		return fmt.Sprintf("<Unknown %T>", node)
 	}
@@ -150,4 +157,14 @@ func indentString(s string) string {
 	}
 
 	return strings.Join(lines, "\n")
+}
+
+func stringifyType(expr Expr) string {
+	t := expr.Type()
+
+	if t == nil {
+		return "<nil>"
+	}
+
+	return t.Name
 }
