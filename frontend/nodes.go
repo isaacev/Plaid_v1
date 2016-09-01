@@ -59,8 +59,9 @@ func (p Program) End() source.Pos {
 
 // FuncExpr represents an anonymous function definition
 type FuncExpr struct {
-	Parameters *FieldList
-	Body       *FunctionBody
+	Parameters       *FieldList
+	ReturnAnnotation *IdentExpr
+	Body             *FunctionBody
 
 	// this field is populated during the type-checking stage where scope
 	// analysis is performed and local variables can be easily counted
@@ -231,7 +232,7 @@ func (d DispatchExpr) stmtNode() {}
 // expression followed by a newline
 type ReturnStmt struct {
 	ReturnKeyword Token
-	Arguments     []Expr
+	Argument      Expr
 }
 
 // Pos returns the starting source code position of this node
@@ -241,11 +242,11 @@ func (p ReturnStmt) Pos() source.Pos {
 
 // End returns the terminal source code position of this node
 func (p ReturnStmt) End() source.Pos {
-	if len(p.Arguments) == 0 {
+	if p.Argument == nil {
 		return p.ReturnKeyword.Span.End
 	}
 
-	return p.Arguments[len(p.Arguments)-1].End()
+	return p.Argument.End()
 }
 
 func (p ReturnStmt) stmtNode() {}

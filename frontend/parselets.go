@@ -404,6 +404,7 @@ func dispatchParselet(p *Parser, leftParen Token, left Node) (expr Node, msg fee
 
 func functionParselet(p *Parser, fatArrow Token, group Node) (expr Node, msg feedback.Message) {
 	var params *FieldList
+	var retAnnotation *IdentExpr
 	var body *FunctionBody
 	var ok bool
 
@@ -418,13 +419,36 @@ func functionParselet(p *Parser, fatArrow Token, group Node) (expr Node, msg fee
 		}
 	}
 
+	// Check if the function declares a return type
+	if p.Lexer.PeekMatches(IdentSymbol) {
+		tok, msg := p.Lexer.ExpectNext(IdentSymbol)
+
+		if msg != nil {
+			return nil, msg
+		}
+
+		node, msg := identParselet(p, tok)
+
+		if retAnnotation, ok = node.(*IdentExpr); ok == false {
+			return nil, feedback.Error{
+				Classification: feedback.SyntaxError,
+				File:           p.Lexer.Scanner.File,
+				What: feedback.Selection{
+					Description: "Expected a return-type annotation",
+					Span:        tok.Span,
+				},
+			}
+		}
+	}
+
 	if body, msg = p.parseFunctionBody(); msg != nil {
 		return nil, msg
 	}
 
 	return &FuncExpr{
-		Parameters: params,
-		Body:       body,
+		Parameters:       params,
+		ReturnAnnotation: retAnnotation,
+		Body:             body,
 	}, nil
 }
 
@@ -457,17 +481,16 @@ func printStatementParselet(p *Parser, printKeyword Token) (expr Node, msg feedb
 }
 
 func returnStatementParselet(p *Parser, returnKeyword Token) (expr Node, msg feedback.Message) {
-	var args []Expr
+	var arg Expr
 
 	// if the "return" keyword is followed by a semicolon, then it isn't
 	// returning any values, otherwise collect any expressions following the
 	// keyword as return values
 	if p.Lexer.PeekMatches(TokenSymbol(";")) == false {
 		if node, msg := p.parseExpression(0); msg == nil {
-			if e, ok := node.(Expr); ok {
-				// argument IS an expression
-				args = append(args, e)
-			} else {
+			var ok bool
+
+			if arg, ok = node.(Expr); ok == false {
 				return nil, feedback.Error{
 					Classification: feedback.SyntaxError,
 					File:           p.Lexer.Scanner.File,
@@ -484,7 +507,7 @@ func returnStatementParselet(p *Parser, returnKeyword Token) (expr Node, msg fee
 
 	return &ReturnStmt{
 		ReturnKeyword: returnKeyword,
-		Arguments:     args,
+		Argument:      arg,
 	}, nil
 }
 

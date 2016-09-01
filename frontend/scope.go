@@ -16,6 +16,7 @@ type Scope struct {
 	upvalues            map[string]*UpvalueRecord
 	registeredVariables []string
 	registeredUpvalues  []string
+	returns             []ReturnRecord
 }
 
 type UpvalueRecord struct {
@@ -28,6 +29,11 @@ type LocalRecord struct {
 	Name        string
 	IsParameter bool
 	LookupIndex int
+}
+
+type ReturnRecord struct {
+	Type *Type
+	Span source.Span
 }
 
 func (s *Scope) registerLocalVariable(name string, sig *Signature) {

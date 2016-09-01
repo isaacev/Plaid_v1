@@ -29,10 +29,11 @@ func stringifyNode(generic Node) string {
 			len(node.Upvalues),
 			indentString(block))
 	case *FuncExpr:
-		return fmt.Sprintf("(func (locals=%d upvalues=%v) %s %s)",
+		return fmt.Sprintf("(func (locals=%d upvalues=%v) %s => %s %s)",
 			len(node.Locals),
 			len(node.Upvalues),
 			stringifyNode(node.Parameters),
+			node.t.Name,
 			stringifyNode(node.Body))
 	case *FieldList:
 		fields := "("
@@ -91,18 +92,9 @@ func stringifyNode(generic Node) string {
 		return fmt.Sprintf("(print %s)",
 			stringifyNode(node.Arguments[0]))
 	case *ReturnStmt:
-		if len(node.Arguments) > 0 {
-			var args string
-
-			for i, arg := range node.Arguments {
-				args += stringifyNode(arg)
-
-				if i < len(node.Arguments)-1 {
-					args += ", "
-				}
-			}
-
-			return fmt.Sprintf("(return %s)", args)
+		if node.Argument != nil {
+			return fmt.Sprintf("(return %s)",
+				stringifyNode(node.Argument))
 		} else {
 			return "(return)"
 		}

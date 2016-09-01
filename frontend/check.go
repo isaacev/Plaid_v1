@@ -23,6 +23,20 @@ func Check(file *source.File, prog *Program) (msgs []feedback.Message) {
 		})
 	}
 
+	// Catch any illegal return statements outside of a function body
+	for _, rec := range globalScope.returns {
+		err := feedback.Error{
+			Classification: feedback.IllegalStatementError,
+			File:           file,
+			What: feedback.Selection{
+				Description: "return statements are not allowed outside of a function body",
+				Span:        rec.Span,
+			},
+		}
+
+		msgs = append(msgs, err)
+	}
+
 	return msgs
 }
 
@@ -219,9 +233,23 @@ func checkPrintStmt(scope *Scope, stmt *PrintStmt) []feedback.Message {
 }
 
 func checkReturnStmt(scope *Scope, stmt *ReturnStmt) (msgs []feedback.Message) {
+	record := ReturnRecord{
+		Type: scope.typeTable.AnyType,
+		Span: source.Span{stmt.Pos(), stmt.End()},
+	}
+
+	if stmt.Argument != nil {
+		var sig *Signature
+		sig, msgs = checkExpression(scope, stmt.Argument)
+		record.Type = sig.Output
+
+		// Check the bodies of any anonymous functions being returned
+		if funcExpr, ok := stmt.Argument.(*FuncExpr); ok {
+			msgs = append(msgs, checkFunctionBody(scope, sig, funcExpr)...)
 		}
 	}
 
+	scope.returns = append(scope.returns, record)
 	return msgs
 }
 
@@ -461,6 +489,23 @@ func checkFuncExpr(scope *Scope, expr *FuncExpr) (sig *Signature, msgs []feedbac
 		sig.InputDefinitions = append(sig.InputDefinitions, source.Span{param.Pos(), param.End()})
 	}
 
+	if expr.ReturnAnnotation != nil {
+		sig.Definition.End = expr.ReturnAnnotation.End()
+
+		if t, ok := scope.typeTable.Table[expr.ReturnAnnotation.Name]; ok {
+			sig.Output = t
+		} else {
+			msgs = append(msgs, feedback.Error{
+				Classification: feedback.UndefinedTypeError,
+				File:           scope.File,
+				What: feedback.Selection{
+					Description: fmt.Sprintf("type `%s` has not been defined", expr.ReturnAnnotation.Name),
+					Span:        source.Span{expr.ReturnAnnotation.Pos(), expr.ReturnAnnotation.End()},
+				},
+			})
+		}
+	}
+
 	expr.t = sig.Output
 	return sig, msgs
 }
@@ -495,6 +540,32 @@ func checkFunctionBody(scope *Scope, sig *Signature, expr *FuncExpr) (msgs []fee
 
 	for _, record := range subScope.upvalues {
 		expr.Upvalues = append(expr.Upvalues, record)
+	}
+
+	// Only check return types if the function has an return-type other than `Any`
+	if sig.Output != scope.typeTable.AnyType {
+		for _, record := range subScope.returns {
+			if record.Type != sig.Output {
+				err := feedback.Error{
+					Classification: feedback.MismatchedTypeError,
+					File:           subScope.File,
+					What: feedback.Selection{
+						Description: fmt.Sprintf("...but function tried to return type `%s`",
+							record.Type.Name),
+						Span: record.Span,
+					},
+					Why: []feedback.Selection{
+						{
+							Description: fmt.Sprintf("function expects return type `%s`...",
+								sig.Output.Name),
+							Span: sig.Definition,
+						},
+					},
+				}
+
+				msgs = append(msgs, err)
+			}
+		}
 	}
 
 	return msgs
