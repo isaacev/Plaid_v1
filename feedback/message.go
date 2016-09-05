@@ -28,6 +28,7 @@ type Message interface {
 // error occured
 type Selection struct {
 	Description string
+	Verbose     string
 	Span        source.Span
 }
 
