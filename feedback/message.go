@@ -57,11 +57,13 @@ func (w Warning) Make(withColor bool) string {
 
 // Error classification constants
 const (
+	IllegalFunctionCall      string = "illegal function call"
 	IllegalStatementError    string = "illegal statement"
 	MismatchedArgumentsError string = "mismatched number of arguments"
 	MismatchedTypeError      string = "mismatched types"
 	RedeclarationError       string = "redeclared variable"
 	SyntaxError              string = "syntax error"
+	TypeAnnotationError      string = "illegal type annotation"
 	TypeCheckError           string = "type check error"
 	UndefinedTypeError       string = "undefined type"
 	UndefinedVariableError   string = "undefined variable"
