@@ -21,8 +21,11 @@ type Token struct {
 const (
 	EOFSymbol     TokenSymbol = "EOF"
 	UnknownSymbol TokenSymbol = "Unknown Token"
+	LParenSymbol  TokenSymbol = "("
+	RParenSymbol  TokenSymbol = ")"
+	CommaSymbol   TokenSymbol = ","
+	ColonSymbol   TokenSymbol = ":"
 	IdentSymbol   TokenSymbol = "Identifier"
-	KeywordSymbol TokenSymbol = "Keyword"
 	IntegerSymbol TokenSymbol = "Integer"
 	DecimalSymbol TokenSymbol = "Decimal"
 	StringSymbol  TokenSymbol = "String"
