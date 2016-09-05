@@ -1,7 +1,7 @@
 package frontend
 
 import (
-    "strconv"
+	"strconv"
 )
 
 func toOrdinal(n int) string {
