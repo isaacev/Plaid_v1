@@ -33,7 +33,6 @@ func (p ProgramNode) Pos() source.Pos {
 	return source.Pos{1, 1}
 }
 
-
 // End returns the terminal source code position of this node
 func (p ProgramNode) End() source.Pos {
 	if len(p.Statements) > 0 {
@@ -291,7 +290,7 @@ func (i *IdentExpr) Pos() source.Pos {
 
 // End returns the terminal source code position of this node
 func (i *IdentExpr) End() source.Pos {
-	return source.Pos{i.NamePos.Line,i.NamePos.Col + len(i.Name) - 1}
+	return source.Pos{i.NamePos.Line, i.NamePos.Col + len(i.Name) - 1}
 }
 
 func (*IdentExpr) exprNode() {}
@@ -312,10 +311,10 @@ type Literal interface {
 
 // FuncLiteral represents an anonymous function definition
 type FuncLiteral struct {
-    FnKeyword        Token
-    LeftParen        Token
+	FnKeyword        Token
+	LeftParen        Token
 	Parameters       []*Parameter
-    RightParen       Token
+	RightParen       Token
 	ReturnAnnotation TypeAnnotation
 	Body             *FuncBody
 
@@ -466,16 +465,16 @@ func (*IntLiteral) stmtNode()    {}
 
 // BoolLiteral represents an instance of a boolean keyword literal in the AST
 type BoolLiteral struct {
-    Lexeme string
-    Value  bool
-    Start  source.Pos
-    _type  *TypeOperator
+	Lexeme string
+	Value  bool
+	Start  source.Pos
+	_type  *TypeOperator
 }
 
 // SetType populates the `_type` field of this expression (this is done during
 // the type-checking phase)
 func (b *BoolLiteral) SetType(_type Type) {
-    b._type = _type.(*TypeOperator)
+	b._type = _type.(*TypeOperator)
 }
 
 // GetType returns the Type associated with this expression. This should never
@@ -539,8 +538,8 @@ type FuncTypeAnnotation struct {
 
 // Pos returns the starting source code position of this node
 func (fn FuncTypeAnnotation) Pos() source.Pos {
-    // FIXME: parameters don't have to be wrapped in parantheses so the
-    // LeftParen and RightParen fields might not be useful
+	// FIXME: parameters don't have to be wrapped in parantheses so the
+	// LeftParen and RightParen fields might not be useful
 	return fn.LeftParen.Span.Start
 }
 
@@ -559,7 +558,7 @@ func (fn FuncTypeAnnotation) End() source.Pos {
 // bodies of conditional statements like If and Loop
 type ConditionalBody struct {
 	Colon      Token
-    Statements []Stmt
+	Statements []Stmt
 	EndKeyword Token
 }
 
@@ -577,7 +576,7 @@ func (c ConditionalBody) End() source.Pos {
 // function definition
 type FuncBody struct {
 	LeftBrace  Token
-    Statements []Stmt
+	Statements []Stmt
 	RightBrace Token
 }
 

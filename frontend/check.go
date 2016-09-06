@@ -114,7 +114,7 @@ func checkIfStmt(scope *Scope, stmt *IfStmt) (msgs []feedback.Message) {
 		// emit this error if the condition evaluates to some other type
 		msgs = append(msgs, feedback.Error{
 			Classification: feedback.MismatchedTypeError,
-			File: scope.File,
+			File:           scope.File,
 			What: feedback.Selection{
 				Description: fmt.Sprintf("condition must have type `%s`, instead found `%s`",
 					scope.types.builtin.Bool.String(),
@@ -136,7 +136,7 @@ func checkLoopStmt(scope *Scope, stmt *LoopStmt) (msgs []feedback.Message) {
 		// emit this error if the condition evaluates to some other type
 		msgs = append(msgs, feedback.Error{
 			Classification: feedback.MismatchedTypeError,
-			File: scope.File,
+			File:           scope.File,
 			What: feedback.Selection{
 				Description: fmt.Sprintf("condition must have type `%s`, instead found `%s`",
 					scope.types.builtin.Bool.String(),
@@ -419,7 +419,7 @@ func checkBinaryExpr(scope *Scope, expr *BinaryExpr) (msgs []feedback.Message) {
 			// binary operation and the given right operand's type
 			msgs = append(msgs, feedback.Error{
 				Classification: feedback.MismatchedTypeError,
-				File: scope.File,
+				File:           scope.File,
 				What: feedback.Selection{
 					Description: fmt.Sprintf("type `%s` cannot call `%s` with type `%s`",
 						typeLeft.String(),
@@ -532,7 +532,7 @@ func checkFuncBody(scope *Scope, expr *FuncLiteral) (msgs []feedback.Message) {
 			if returnRecord.Type.CastsTo(expr._type.returnType) == false {
 				msgs = append(msgs, feedback.Error{
 					Classification: feedback.MismatchedTypeError,
-					File: funcScope.File,
+					File:           funcScope.File,
 					What: feedback.Selection{
 						Description: fmt.Sprintf("... but function tried to return type `%s`",
 							returnRecord.Type.String()),

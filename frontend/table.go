@@ -6,7 +6,7 @@ type typeTable struct {
 }
 
 type typeTableEntry struct {
-	Type    Type
+	Type Type
 }
 
 type builtinList struct {
@@ -82,19 +82,19 @@ func newTypeTable() *typeTable {
 	b.AddMethod(&Method{"&&", b, b, b})
 	b.AddMethod(&Method{"||", b, b, b})
 
-	table.builtin.Any  = a
+	table.builtin.Any = a
 	table.addNamedType("Any", a)
 
 	table.builtin.Bool = b
 	table.addNamedType("Bool", b)
 
-	table.builtin.Int  = i
+	table.builtin.Int = i
 	table.addNamedType("Int", i)
 
-	table.builtin.Dec  = d
+	table.builtin.Dec = d
 	table.addNamedType("Dec", d)
 
-	table.builtin.Str  = s
+	table.builtin.Str = s
 	table.addNamedType("Str", s)
 
 	table.builtin.Func = f

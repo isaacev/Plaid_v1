@@ -290,7 +290,7 @@ func typeAnnotationToType(scope *Scope, annotation TypeAnnotation) (Type, feedba
 			File:           scope.File,
 			What: feedback.Selection{
 				Description: fmt.Sprintf("Unknown type `%s`", name),
-				Span: source.Span{a.Pos(), a.End()},
+				Span:        source.Span{a.Pos(), a.End()},
 			},
 		}
 	case FuncTypeAnnotation:

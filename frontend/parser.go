@@ -42,7 +42,16 @@ func NewParser(file *source.File) *Parser {
 	grammar := &Grammar{
 		OperatorRunes:   []rune{'+', '-', '*', '/', ':', '=', '<', '>'},
 		PunctuatorRunes: []rune{'(', ')', '{', '}', ';', ',', '#'},
-		Keywords:        []string{"fn", "let", "print", "return", "if", "else", "loop", "end"},
+		Keywords: []string{
+			"fn",
+			"let",
+			"print",
+			"return",
+			"if",
+			"else",
+			"loop",
+			"end",
+		},
 	}
 
 	lexer := NewLexer(file, grammar)
