@@ -37,6 +37,10 @@ func (*AnyType) Equals(t2 Type) bool {
 }
 
 func (any *AnyType) CastsTo(t2 Type) bool {
+	// It's important to remember that all types can be used where `Any` is
+	// accepted but `Any` can only be used where `Any` is accepted so `Any` can
+	// only be automatically cast to `Any` hence the check for equality in this
+	// method
 	return any.Equals(t2)
 }
 
