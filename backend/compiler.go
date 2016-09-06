@@ -288,7 +288,7 @@ func (state *assembly) compile(node frontend.Node, destReg RegisterAddress) Regi
 
 		// determine which register is holding the closure to call
 		// FIXME handle call to upvalue
-		sourceReg := state.lookupLocalRegister(n.Root.Name)
+		sourceReg := state.compile(n.Root, state.stackPtr)
 
 		// Any values returned from closures are stored at the calling stack
 		// frame's 0th register. The Dispatch/Move instruction pair calls a
