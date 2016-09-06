@@ -24,7 +24,7 @@ func literalParselet(p *Parser, tok Token) (expr Node, msg feedback.Message) {
 		tmpInt64, _ := strconv.ParseInt(tok.Lexeme, 10, precisionBits)
 		i32 := int32(tmpInt64)
 
-		return &IntegerExpr{
+		return &IntLiteral{
 			Lexeme: tok.Lexeme,
 			Value:  i32,
 			Start:  tok.Span.Start,
@@ -34,7 +34,7 @@ func literalParselet(p *Parser, tok Token) (expr Node, msg feedback.Message) {
 		f64, _ := strconv.ParseFloat(tok.Lexeme, precisionBits)
 		f32 := float32(f64)
 
-		return &DecimalExpr{
+		return &DecLiteral{
 			Lexeme: tok.Lexeme,
 			Value:  f32,
 			Start:  tok.Span.Start,
@@ -50,7 +50,7 @@ func literalParselet(p *Parser, tok Token) (expr Node, msg feedback.Message) {
 		// trim leading double quote
 		trimmed = trimmed[1:]
 
-		return &StringExpr{
+		return &StrLiteral{
 			Lexeme: tok.Lexeme,
 			Value:  trimmed,
 			Start:  tok.Span.Start,
@@ -67,90 +67,33 @@ func literalParselet(p *Parser, tok Token) (expr Node, msg feedback.Message) {
 	}
 }
 
-func leadingParenParselet(p *Parser, lParen Token) (expr Node, msg feedback.Message) {
-	var rParen Token
+func groupParselet(p *Parser, leftParen Token) (expr Node, err feedback.Message) {
+	var n Node
+	var inner Expr
+	// var rightParen Token
 
-	if p.Lexer.PeekMatches(TokenSymbol(")")) {
-		// empty list of parameters
-		if rParen, msg = p.Lexer.ExpectNext(TokenSymbol(")")); msg != nil {
-			return nil, msg
+	if n, err = p.parseExpression(0); err != nil {
+		return nil, err
+	} else {
+		var ok bool
+
+		if inner, ok = n.(Expr); ok == false {
+			return nil, feedback.Error{
+				Classification: feedback.IllegalStatementError,
+				File:           p.Lexer.Scanner.File,
+				What: feedback.Selection{
+					Description: "Expected expression",
+					Span:        source.Span{n.Pos(), n.End()},
+				},
+			}
 		}
-
-		return &FieldList{
-			LeftParen:  lParen,
-			RightParen: rParen,
-		}, nil
 	}
 
-	var elements []Node
-	noTrailingComma := false
-
-	for {
-		if noTrailingComma {
-			if rParen, msg = p.Lexer.ExpectNext(TokenSymbol(")")); msg != nil {
-				return nil, msg
-			}
-
-			if p.Lexer.PeekMatches(TokenSymbol("=>")) {
-				// group is a field list, not an expression group
-				var fields []*TypeAnnotationStmt
-
-				// convert expression nodes to TypeAnnotationStmt's, throw an
-				// error if none are valid TypeAnnotationStmt's or IdentExpr's
-				for _, generic := range elements {
-					switch node := generic.(type) {
-					case *IdentExpr:
-						fields = append(fields, &TypeAnnotationStmt{
-							Identifier:   node,
-							ExplicitType: false,
-						})
-					case *TypeAnnotationStmt:
-						fields = append(fields, node)
-					default:
-						return nil, feedback.Error{
-							Classification: feedback.SyntaxError,
-							File:           p.Lexer.Scanner.File,
-							What: feedback.Selection{
-								Description: fmt.Sprintf(
-									"Unexpected expression `%T` in field list",
-									node),
-								Span: source.Span{Start: node.Pos(), End: node.End()},
-							},
-						}
-					}
-				}
-
-				return &FieldList{
-					Fields:     fields,
-					LeftParen:  lParen,
-					RightParen: rParen,
-				}, nil
-			} else if len(elements) == 1 {
-				// if parenthetical has 1 element, that element is an expression
-				// and the parenthetical is NOT followed by a far arrow, asssume
-				// the parenthetical is a grouped expression
-				if group, ok := elements[0].(Expr); ok {
-					return group, msg
-				}
-			}
-		}
-
-		var elem Node
-
-		if elem, msg = p.parseExpression(0); msg != nil {
-			return nil, msg
-		}
-
-		elements = append(elements, elem)
-
-		if p.Lexer.PeekMatches(TokenSymbol(",")) {
-			if _, msg := p.Lexer.ExpectNext(TokenSymbol(",")); msg != nil {
-				return nil, msg
-			}
-		} else {
-			noTrailingComma = true
-		}
+	if _, err = p.Lexer.ExpectNext(RParenSymbol); err != nil {
+		return nil, err
 	}
+
+	return inner, nil
 }
 
 func binaryInfixParselet(precedence int) binaryParselet {
@@ -197,49 +140,6 @@ func binaryInfixParselet(precedence int) binaryParselet {
 			Right:    rightExpr,
 		}, nil
 	}
-}
-
-func typeAssociationParselet(p *Parser, doubleColon Token, left Node) (expr Node, msg feedback.Message) {
-	var name *IdentExpr
-	var annotation *IdentExpr
-
-	if n, ok := left.(*IdentExpr); ok {
-		name = n
-	} else {
-		return nil, feedback.Error{
-			Classification: feedback.SyntaxError,
-			File:           p.Lexer.Scanner.File,
-			What: feedback.Selection{
-				Description: fmt.Sprintf("Left hand of type annotation must be an identifier"),
-				Span:        source.Span{Start: left.Pos(), End: left.End()},
-			},
-		}
-	}
-
-	right, msg := p.parseExpression(0)
-
-	if msg != nil {
-		return nil, msg
-	}
-
-	if n, ok := right.(*IdentExpr); ok {
-		annotation = n
-	} else {
-		return nil, feedback.Error{
-			Classification: feedback.SyntaxError,
-			File:           p.Lexer.Scanner.File,
-			What: feedback.Selection{
-				Description: fmt.Sprintf("Right hand of type annotation must be a valid type identifier"),
-				Span:        source.Span{Start: right.Pos(), End: right.End()},
-			},
-		}
-	}
-
-	return &TypeAnnotationStmt{
-		Identifier:   name,
-		Annotation:   annotation,
-		ExplicitType: true,
-	}, nil
 }
 
 func letDeclarationParselet(p *Parser, letKeyword Token) (expr Node, msg feedback.Message) {
@@ -312,7 +212,7 @@ func assignmentParselet(p *Parser, colonEqual Token, left Node) (expr Node, msg 
 		}
 	}
 
-	right, msg := p.parseExpression(0)
+	right, msg := p.parseExpression(9)
 
 	if msg != nil {
 		return nil, msg
@@ -338,17 +238,17 @@ func assignmentParselet(p *Parser, colonEqual Token, left Node) (expr Node, msg 
 }
 
 func dispatchParselet(p *Parser, leftParen Token, left Node) (expr Node, msg feedback.Message) {
+	var root Expr
 	var args []Expr
-	var root *IdentExpr
 
-	if n, ok := left.(*IdentExpr); ok {
+	if n, ok := left.(Expr); ok {
 		root = n
 	} else {
 		return nil, feedback.Error{
 			Classification: feedback.SyntaxError,
 			File:           p.Lexer.Scanner.File,
 			What: feedback.Selection{
-				Description: fmt.Sprintf("Expected identifier in function dispatch"),
+				Description: fmt.Sprintf("Expected expression to be called"),
 				Span:        source.Span{Start: left.Pos(), End: left.End()},
 			},
 		}
@@ -402,53 +302,222 @@ func dispatchParselet(p *Parser, leftParen Token, left Node) (expr Node, msg fee
 	}, nil
 }
 
-func functionParselet(p *Parser, fatArrow Token, group Node) (expr Node, msg feedback.Message) {
-	var params *FieldList
-	var retAnnotation *IdentExpr
-	var body *FunctionBody
-	var ok bool
-
-	if params, ok = group.(*FieldList); ok == false {
-		return nil, feedback.Error{
-			Classification: feedback.SyntaxError,
-			File:           p.Lexer.Scanner.File,
-			What: feedback.Selection{
-				Description: "Expected field list",
-				Span:        source.Span{Start: group.Pos(), End: group.End()},
-			},
-		}
+func funcParselet(p *Parser, fnKeyword Token) (expr Node, err feedback.Message) {
+	funcLiteral := &FuncLiteral{
+		FnKeyword:        fnKeyword,
+		Parameters:       []*Parameter{},
+		ReturnAnnotation: nil,
+		Body:             nil,
 	}
 
-	// Check if the function declares a return type
-	if p.Lexer.PeekMatches(IdentSymbol) {
-		tok, msg := p.Lexer.ExpectNext(IdentSymbol)
+	// Parse the function's parameter list's left-paren
+	if funcLiteral.LeftParen, err = p.Lexer.ExpectNext(LParenSymbol); err != nil {
+		return nil, err
+	}
 
-		if msg != nil {
-			return nil, msg
-		}
+	if p.Lexer.PeekMatches(RParenSymbol) == false {
+		// Parse the parameters
+		for {
+			var ident *IdentExpr
+			var annotation TypeAnnotation = nil
 
-		node, msg := identParselet(p, tok)
+			if tok, err := p.Lexer.ExpectNext(IdentSymbol); err != nil {
+				return nil, err
+			} else {
+				ident = &IdentExpr{
+					NamePos: tok.Span.Start,
+					Name:    tok.Lexeme,
+				}
+			}
 
-		if retAnnotation, ok = node.(*IdentExpr); ok == false {
-			return nil, feedback.Error{
-				Classification: feedback.SyntaxError,
-				File:           p.Lexer.Scanner.File,
-				What: feedback.Selection{
-					Description: "Expected a return-type annotation",
-					Span:        tok.Span,
-				},
+			// Parameter has a type annotation
+			if p.Lexer.PeekMatches(ColonSymbol) {
+				// Consume the colon
+				p.Lexer.ExpectNext(ColonSymbol)
+
+				// Parse the type annotation
+				if annotation, err = typeAnnotationParselet(p); err != nil {
+					return nil, err
+				}
+			}
+
+			// Bind the parameter identifier and the optional type annotation
+			// into a Field and append that Field to the function's FieldList.
+			// Annotation is <nil> if no annotation was given
+			funcLiteral.Parameters = append(funcLiteral.Parameters, &Parameter{
+				Name:       ident,
+				Annotation: annotation,
+			})
+
+			// Exit the loop if the parameter isn't followed by a comma
+			if p.Lexer.PeekMatches(CommaSymbol) == false {
+				break
+			} else {
+				// Otherwise consume the comma and then parse the next parameter
+				p.Lexer.ExpectNext(CommaSymbol)
+				continue
 			}
 		}
 	}
 
-	if body, msg = p.parseFunctionBody(); msg != nil {
+	// Consume the closing right-paren on the parameter list
+	if funcLiteral.RightParen, err = p.Lexer.ExpectNext(RParenSymbol); err != nil {
+		return nil, err
+	}
+
+	// Check if the parameter list is followed by a function return-type annotation
+	if p.Lexer.PeekMatches(ColonSymbol) {
+		p.Lexer.ExpectNext(ColonSymbol)
+
+		// Parse the return-type annotation
+		if funcLiteral.ReturnAnnotation, err = typeAnnotationParselet(p); err != nil {
+			return nil, err
+		}
+	}
+
+	// Finally parse the function body (a series of 0 or more statements
+	// contained between curly braces)
+	if funcLiteral.Body, err = funcBodyParselet(p); err != nil {
+		return nil, err
+	}
+
+	return funcLiteral, nil
+}
+
+// parseFuncBody returns a FuncBody struct representing the collection
+// of statements between braces in a function body
+func funcBodyParselet(p *Parser) (body *FuncBody, msg feedback.Message) {
+	var lBrace Token
+	var stmts []Stmt
+	var rBrace Token
+
+	if lBrace, msg = p.Lexer.ExpectNext(TokenSymbol("{")); msg != nil {
 		return nil, msg
 	}
 
-	return &FuncExpr{
-		Parameters:       params,
-		ReturnAnnotation: retAnnotation,
-		Body:             body,
+	if stmts, msg = p.parseStatementsUntil(TokenSymbol("}")); msg != nil {
+		return nil, msg
+	}
+
+	if rBrace, msg = p.Lexer.ExpectNext(TokenSymbol("}")); msg != nil {
+		return nil, msg
+	}
+
+	return &FuncBody{
+		Statements: stmts,
+		LeftBrace:  lBrace,
+		RightBrace: rBrace,
+	}, nil
+}
+
+func typeAnnotationParselet(p *Parser) (annotation TypeAnnotation, msg feedback.Message) {
+	var leftParen, rightParen Token
+	var params []TypeAnnotation
+	var returnAnnotation TypeAnnotation
+
+	if p.Lexer.PeekMatches(TokenSymbol("(")) {
+		// Consume the left-paren
+		if leftParen, msg = p.Lexer.ExpectNext(TokenSymbol("(")); msg != nil {
+			return nil, msg
+		}
+
+		// Consume inner type annotation(s)
+		for {
+			// Catches empty parentheses
+			if p.Lexer.PeekMatches(TokenSymbol(")")) {
+				break
+			}
+
+			var anno TypeAnnotation
+
+			// Parse the next interior annotation
+			if anno, msg = typeAnnotationParselet(p); msg != nil {
+				return nil, msg
+			}
+
+			// Add the newly parsed annotation to the list of parameters
+			params = append(params, anno)
+
+			// If the annotation is followed by a comma, then there are sill are
+			// more annotations in the group
+			if p.Lexer.PeekMatches(TokenSymbol(",")) {
+				if _, msg := p.Lexer.ExpectNext(TokenSymbol(",")); msg != nil {
+					return nil, msg
+				}
+			} else {
+				// No comma after the last annotation, exit the loop so the
+				// right-paren can be consumed
+				break
+			}
+		}
+
+		if rightParen, msg = p.Lexer.ExpectNext(TokenSymbol(")")); msg != nil {
+			return nil, msg
+		}
+	} else if p.Lexer.PeekMatches(IdentSymbol) {
+		// Consume a type-identifier and build a named type annotation
+		namedType := NamedTypeAnnotation{}
+
+		// Parse the IdentSymbol token into an *IdentExpr to use in the annotation
+		if tok, msg := p.Lexer.ExpectNext(IdentSymbol); msg != nil {
+			return nil, msg
+		} else if node, msg := identParselet(p, tok); msg != nil {
+			return nil, msg
+		} else {
+			namedType.Name = node.(*IdentExpr)
+		}
+
+		// Add the new annotation to the list of params if the next token is
+		// a function token: `=>`. Otherwise just return the annotation
+		if p.Lexer.PeekMatches(TokenSymbol("=>")) {
+			params = append(params, namedType)
+		} else {
+			return namedType, nil
+		}
+	} else {
+		tok, _ := p.Lexer.Next()
+
+		return nil, feedback.Error{
+			Classification: feedback.TypeAnnotationError,
+			File:           p.Lexer.Scanner.File,
+			What: feedback.Selection{
+				Description: "Missing parameters before fat arrow",
+				Verbose:     "If function has no parameters use `()`. If there are no parameter constraints, use `Any`",
+				Span:        tok.Span,
+			},
+		}
+	}
+
+	// If the parselet makes it this far, the type annotation must be a function
+	// annotation so expect a far arrow token
+	if _, msg = p.Lexer.ExpectNext(TokenSymbol("=>")); msg != nil {
+		return nil, msg
+	}
+
+	if p.Lexer.PeekMatches(TokenSymbol("(")) || p.Lexer.PeekMatches(IdentSymbol) {
+		if returnAnnotation, msg = typeAnnotationParselet(p); msg != nil {
+			return nil, msg
+		}
+	} else {
+		tok, _ := p.Lexer.Next()
+
+		return nil, feedback.Error{
+			Classification: feedback.TypeAnnotationError,
+			File:           p.Lexer.Scanner.File,
+			What: feedback.Selection{
+				Description: "Missing return type after fat arrow",
+				Verbose:     "If function returns nothing use `None`. If the type is unknown use `Any`",
+				Span:        tok.Span,
+			},
+		}
+	}
+
+	// Check if the annotation has already been
+	return FuncTypeAnnotation{
+		LeftParen:  leftParen,
+		Parameters: params,
+		RightParen: rightParen,
+		ReturnType: returnAnnotation,
 	}, nil
 }
 

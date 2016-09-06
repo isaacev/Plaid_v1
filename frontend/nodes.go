@@ -10,99 +10,50 @@ type Node interface {
 	End() source.Pos
 }
 
-// Expr represents a Node that returns a value when executed
-type Expr interface {
-	Node
-	Type() *Type
-	exprNode()
+/**
+ * ROOT PROGRAM NODE
+ */
+
+// ProgramNode is the root node for an AST
+type ProgramNode struct {
+	Statements []Stmt
+
+	// this field is populated during the type-checking stage where scope
+	// analysis is performed and local variables can be easily counted
+	Locals   []*LocalRecord
+	Upvalues []*UpvalueRecord
 }
+
+// Pos returns the starting source code position of this node
+func (p ProgramNode) Pos() source.Pos {
+	if len(p.Statements) > 0 {
+		return p.Statements[0].Pos()
+	}
+
+	return source.Pos{1, 1}
+}
+
+
+// End returns the terminal source code position of this node
+func (p ProgramNode) End() source.Pos {
+	if len(p.Statements) > 0 {
+		return p.Statements[len(p.Statements)-1].End()
+	}
+
+	return source.Pos{1, 1}
+}
+
+/**
+ * STATEMENT NODES
+ *  - statements--unlike expressions--emit no useful value and thus cannot be
+ *    used inside of expressions
+ *  - expressions can be used as statements but their emitted value is discarded
+ */
 
 // Stmt represents a Node that does not necessarily return a value when executed
 type Stmt interface {
 	Node
 	stmtNode()
-}
-
-// Program is the root node for an AST
-type Program struct {
-	Statements []Stmt
-
-	// this field is populated during the type-checking stage where scope
-	// analysis is performed and local variables can be easily counted
-	Locals   []*LocalRecord
-	Upvalues []*UpvalueRecord
-}
-
-// Pos returns the starting source code position of this node
-func (p Program) Pos() source.Pos {
-	if len(p.Statements) > 0 {
-		return p.Statements[0].Pos()
-	}
-
-	return source.Pos{
-		Line: 1,
-		Col:  1,
-	}
-}
-
-// End returns the terminal source code position of this node
-func (p Program) End() source.Pos {
-	if len(p.Statements) > 0 {
-		return p.Statements[len(p.Statements)-1].End()
-	}
-
-	return source.Pos{
-		Line: 1,
-		Col:  1,
-	}
-}
-
-// FuncExpr represents an anonymous function definition
-type FuncExpr struct {
-	Parameters       *FieldList
-	ReturnAnnotation *IdentExpr
-	Body             *FunctionBody
-
-	// this field is populated during the type-checking stage where scope
-	// analysis is performed and local variables can be easily counted
-	Locals   []*LocalRecord
-	Upvalues []*UpvalueRecord
-	t        *Type
-}
-
-func (i FuncExpr) Type() *Type {
-	return i.t
-}
-
-// Pos returns the starting source code position of this node
-func (f FuncExpr) Pos() source.Pos {
-	return f.Parameters.Pos()
-}
-
-// End returns the terminal source code position of this node
-func (f FuncExpr) End() source.Pos {
-	return f.Body.End()
-}
-
-func (f FuncExpr) exprNode() {}
-func (f FuncExpr) stmtNode() {}
-
-// FunctionBody represents the collection of statements that make up part of a
-// function definition
-type FunctionBody struct {
-	Statements []Stmt
-	LeftBrace  Token
-	RightBrace Token
-}
-
-// Pos returns the starting source code position of this node
-func (f FunctionBody) Pos() source.Pos {
-	return f.LeftBrace.Span.Start
-}
-
-// End returns the terminal source code position of this node
-func (f FunctionBody) End() source.Pos {
-	return f.RightBrace.Span.Start
 }
 
 // IfStmt represents a basic conditional statement
@@ -122,7 +73,7 @@ func (i IfStmt) End() source.Pos {
 	return i.Body.End()
 }
 
-func (i IfStmt) stmtNode() {}
+func (IfStmt) stmtNode() {}
 
 // LoopStmt represents a loop statement
 type LoopStmt struct {
@@ -132,52 +83,76 @@ type LoopStmt struct {
 }
 
 // Pos returns the starting source code position of this node
-func (w LoopStmt) Pos() source.Pos {
-	return w.LoopKeyword.Span.Start
+func (l LoopStmt) Pos() source.Pos {
+	return l.LoopKeyword.Span.Start
 }
 
 // End returns the terminal source code position of this node
-func (w LoopStmt) End() source.Pos {
-	return w.Body.End()
+func (l LoopStmt) End() source.Pos {
+	return l.Body.End()
 }
 
-func (w LoopStmt) stmtNode() {}
+func (LoopStmt) stmtNode() {}
 
-// ConditionalBody represents the collection of statements that make up the
-// bodies of conditional statements like If and Loop
-type ConditionalBody struct {
-	Statements []Stmt
-	Colon      Token
-	EndKeyword Token
+// DeclarationStmt represents the mapping of a value to a variable
+type DeclarationStmt struct {
+	LetKeyword Token
+	Assignee   *IdentExpr
+	Assignment Expr
 }
 
 // Pos returns the starting source code position of this node
-func (c ConditionalBody) Pos() source.Pos {
-	return c.Colon.Span.Start
+func (a DeclarationStmt) Pos() source.Pos {
+	return a.LetKeyword.Span.Start
 }
 
 // End returns the terminal source code position of this node
-func (c ConditionalBody) End() source.Pos {
-	return c.EndKeyword.Span.Start
+func (a DeclarationStmt) End() source.Pos {
+	return a.Assignment.End()
 }
 
-// FieldList represents a collection of type annotations like those found in
-// function parameter definitions
-type FieldList struct {
-	Fields     []*TypeAnnotationStmt
-	LeftParen  Token
-	RightParen Token
+func (DeclarationStmt) stmtNode() {}
+
+// AssignmentStmt represents the mapping of a value to a variable
+type AssignmentStmt struct {
+	Assignee   *IdentExpr
+	Assignment Expr
 }
 
 // Pos returns the starting source code position of this node
-func (f FieldList) Pos() source.Pos {
-	return f.LeftParen.Span.Start
+func (a AssignmentStmt) Pos() source.Pos {
+	return a.Assignee.Pos()
 }
 
 // End returns the terminal source code position of this node
-func (f FieldList) End() source.Pos {
-	return f.RightParen.Span.Start
+func (a AssignmentStmt) End() source.Pos {
+	return a.Assignment.End()
 }
+
+func (AssignmentStmt) stmtNode() {}
+
+// ReturnStmt represents a print statement which outputs the result of an
+// expression followed by a newline
+type ReturnStmt struct {
+	ReturnKeyword Token
+	Argument      Expr
+}
+
+// Pos returns the starting source code position of this node
+func (r ReturnStmt) Pos() source.Pos {
+	return r.ReturnKeyword.Span.Start
+}
+
+// End returns the terminal source code position of this node
+func (r ReturnStmt) End() source.Pos {
+	if r.Argument == nil {
+		return r.ReturnKeyword.Span.End
+	}
+
+	return r.Argument.End()
+}
+
+func (ReturnStmt) stmtNode() {}
 
 // PrintStmt represents a print statement which outputs the result of an
 // expression followed by a newline
@@ -200,56 +175,59 @@ func (p PrintStmt) End() source.Pos {
 	return p.Arguments[len(p.Arguments)-1].End()
 }
 
-func (p PrintStmt) stmtNode() {}
+func (PrintStmt) stmtNode() {}
+
+/**
+ * EXPRESSION NODES
+ *  - expressions emit some value with a type so they can be composed
+ *    recursively to make more complex expressions or statements
+ *  - each expression has a `_type` field which is populated during the type
+ *    checking phase with the computed type output by the expression based on
+ *    the rules in the scope's type-table
+ */
+
+// Expr represents a Node that returns a value when executed
+type Expr interface {
+	Node
+	GetType() Type
+	SetType(Type)
+	exprNode()
+}
 
 // DispatchExpr represents a function dispatch including root and any arguments
 type DispatchExpr struct {
-	Root       *IdentExpr
+	Root       Expr
 	Arguments  []Expr
 	LeftParen  Token
 	RightParen Token
-	t          *Type
+	_type      Type
 }
 
-func (i DispatchExpr) Type() *Type {
-	return i.t
+// SetType populates the `_type` field of this expression (this is done during
+// the type-checking phase)
+func (d *DispatchExpr) SetType(_type Type) {
+	d._type = _type
+}
+
+// GetType returns the Type associated with this expression. This should never
+// be called before the expression has been type checked since it will return
+// `nil` in that case
+func (d *DispatchExpr) GetType() Type {
+	return d._type
 }
 
 // Pos returns the starting source code position of this node
-func (d DispatchExpr) Pos() source.Pos {
+func (d *DispatchExpr) Pos() source.Pos {
 	return d.Root.Pos()
 }
 
 // End returns the terminal source code position of this node
-func (d DispatchExpr) End() source.Pos {
+func (d *DispatchExpr) End() source.Pos {
 	return d.RightParen.Span.End
 }
 
-func (d DispatchExpr) exprNode() {}
-func (d DispatchExpr) stmtNode() {}
-
-// ReturnStmt represents a print statement which outputs the result of an
-// expression followed by a newline
-type ReturnStmt struct {
-	ReturnKeyword Token
-	Argument      Expr
-}
-
-// Pos returns the starting source code position of this node
-func (p ReturnStmt) Pos() source.Pos {
-	return p.ReturnKeyword.Span.Start
-}
-
-// End returns the terminal source code position of this node
-func (p ReturnStmt) End() source.Pos {
-	if p.Argument == nil {
-		return p.ReturnKeyword.Span.End
-	}
-
-	return p.Argument.End()
-}
-
-func (p ReturnStmt) stmtNode() {}
+func (*DispatchExpr) exprNode() {}
+func (*DispatchExpr) stmtNode() {}
 
 // BinaryExpr represents a basic expression of the form:
 // <left expr> <operator> <right expr>
@@ -257,112 +235,74 @@ type BinaryExpr struct {
 	Operator TokenSymbol
 	Left     Expr
 	Right    Expr
-	t        *Type
+	_type    Type
 }
 
-func (b BinaryExpr) Type() *Type {
-	return b.t
+// SetType populates the `_type` field of this expression (this is done during
+// the type-checking phase)
+func (b *BinaryExpr) SetType(_type Type) {
+	b._type = _type
+}
+
+// GetType returns the Type associated with this expression. This should never
+// be called before the expression has been type checked since it will return
+// `nil` in that case
+func (b *BinaryExpr) GetType() Type {
+	return b._type
 }
 
 // Pos returns the starting source code position of this node
-func (b BinaryExpr) Pos() source.Pos {
+func (b *BinaryExpr) Pos() source.Pos {
 	return b.Left.Pos()
 }
 
 // End returns the terminal source code position of this node
-func (b BinaryExpr) End() source.Pos {
+func (b *BinaryExpr) End() source.Pos {
 	return b.Right.End()
 }
 
-func (b BinaryExpr) exprNode() {}
-func (b BinaryExpr) stmtNode() {}
-
-// TypeAnnotationStmt represents the association of a variable name with a type
-type TypeAnnotationStmt struct {
-	Identifier   *IdentExpr
-	Annotation   *IdentExpr
-	ExplicitType bool
-}
-
-// Pos returns the starting source code position of this node
-func (t TypeAnnotationStmt) Pos() source.Pos {
-	return t.Identifier.Pos()
-}
-
-// End returns the terminal source code position of this node
-func (t TypeAnnotationStmt) End() source.Pos {
-	if t.Annotation == nil {
-		return t.Identifier.End()
-	}
-
-	return t.Annotation.End()
-}
-
-func (t TypeAnnotationStmt) stmtNode() {}
-
-// DeclarationStmt represents the mapping of a value to a variable
-type DeclarationStmt struct {
-	LetKeyword Token
-	Assignee   *IdentExpr
-	Assignment Expr
-}
-
-// Pos returns the starting source code position of this node
-func (a DeclarationStmt) Pos() source.Pos {
-	return a.LetKeyword.Span.Start
-}
-
-// End returns the terminal source code position of this node
-func (a DeclarationStmt) End() source.Pos {
-	return a.Assignment.End()
-}
-
-func (a DeclarationStmt) stmtNode() {}
-
-// AssignmentStmt represents the mapping of a value to a variable
-type AssignmentStmt struct {
-	Assignee   *IdentExpr
-	Assignment Expr
-}
-
-// Pos returns the starting source code position of this node
-func (a AssignmentStmt) Pos() source.Pos {
-	return a.Assignee.Pos()
-}
-
-// End returns the terminal source code position of this node
-func (a AssignmentStmt) End() source.Pos {
-	return a.Assignment.End()
-}
-
-func (a AssignmentStmt) stmtNode() {}
+func (*BinaryExpr) exprNode() {}
+func (*BinaryExpr) stmtNode() {}
 
 // IdentExpr represents a single identifier in the AST
 type IdentExpr struct {
 	NamePos source.Pos
 	Name    string
-	t       *Type
+	_type   Type
 }
 
-func (i IdentExpr) Type() *Type {
-	return i.t
+// SetType populates the `_type` field of this expression (this is done during
+// the type-checking phase)
+func (i *IdentExpr) SetType(_type Type) {
+	i._type = _type
+}
+
+// GetType returns the Type associated with this expression. This should never
+// be called before the expression has been type checked since it will return
+// `nil` in that case
+func (i *IdentExpr) GetType() Type {
+	return i._type
 }
 
 // Pos returns the starting source code position of this node
-func (i IdentExpr) Pos() source.Pos {
+func (i *IdentExpr) Pos() source.Pos {
 	return i.NamePos
 }
 
 // End returns the terminal source code position of this node
-func (i IdentExpr) End() source.Pos {
-	return source.Pos{
-		Line: i.NamePos.Line,
-		Col:  i.NamePos.Col + len(i.Name) - 1,
-	}
+func (i *IdentExpr) End() source.Pos {
+	return source.Pos{i.NamePos.Line,i.NamePos.Col + len(i.Name) - 1}
 }
 
-func (i IdentExpr) exprNode() {}
-func (i IdentExpr) stmtNode() {}
+func (*IdentExpr) exprNode() {}
+func (*IdentExpr) stmtNode() {}
+
+/**
+ * EXPRESSION LITERAL NODES
+ *  - these nodes represent fundamental expressions of built in data-structures
+ *    in the language. This includes number literals (both integers and
+ *    decimals), strings literals, boolean keywords, and function literals
+ */
 
 // Literal node represents a literal value in the AST
 type Literal interface {
@@ -370,98 +310,304 @@ type Literal interface {
 	literalNode()
 }
 
-// IntegerExpr represents an instance of an integer literal in the AST
-type IntegerExpr struct {
-	Lexeme  string
-	Value   int32
-	Start   source.Pos
-	t       *Type
+// FuncLiteral represents an anonymous function definition
+type FuncLiteral struct {
+    FnKeyword        Token
+    LeftParen        Token
+	Parameters       []*Parameter
+    RightParen       Token
+	ReturnAnnotation TypeAnnotation
+	Body             *FuncBody
+
+	// this field is populated during the type-checking stage where scope
+	// analysis is performed and local variables can be easily counted
+	Locals   []*LocalRecord
+	Upvalues []*UpvalueRecord
+	_type    *FuncType
 }
 
-func (i IntegerExpr) Type() *Type {
-	return i.t
+// SetType populates the `_type` field of this expression (this is done during
+// the type-checking phase)
+func (f *FuncLiteral) SetType(_type Type) {
+	f._type = _type.(*FuncType)
+}
+
+// GetType returns the Type associated with this expression. This should never
+// be called before the expression has been type checked since it will return
+// `nil` in that case
+func (f *FuncLiteral) GetType() Type {
+	return f._type
 }
 
 // Pos returns the starting source code position of this node
-func (i IntegerExpr) Pos() source.Pos {
-	return i.Start
+func (f *FuncLiteral) Pos() source.Pos {
+	return f.FnKeyword.Span.Start
 }
 
 // End returns the terminal source code position of this node
-func (i IntegerExpr) End() source.Pos {
-	return source.Pos{
-		Line: i.Start.Line,
-		Col:  i.Start.Col + (len(i.Lexeme) - 1),
-	}
+func (f *FuncLiteral) End() source.Pos {
+	return f.Body.End()
 }
 
-func (i IntegerExpr) literalNode() {}
-func (i IntegerExpr) exprNode()    {}
-func (i IntegerExpr) stmtNode()    {}
+func (*FuncLiteral) literalNode() {}
+func (*FuncLiteral) exprNode()    {}
+func (*FuncLiteral) stmtNode()    {}
 
-// DecimalExpr represents an instance of a floating point literal in the AST
-type DecimalExpr struct {
-	Lexeme  string
-	Value   float32
-	Start   source.Pos
-	t       *Type
+// StrLiteral represents an instance of a string literal in the AST
+type StrLiteral struct {
+	Lexeme string
+	Value  string
+	Start  source.Pos
+	_type  *TypeOperator
 }
 
-func (i DecimalExpr) Type() *Type {
-	return i.t
+// SetType populates the `_type` field of this expression (this is done during
+// the type-checking phase)
+func (s *StrLiteral) SetType(_type Type) {
+	s._type = _type.(*TypeOperator)
 }
 
-// Pos returns the starting source code position of this node
-func (i DecimalExpr) Pos() source.Pos {
-	return i.Start
-}
-
-// End returns the terminal source code position of this node
-func (i DecimalExpr) End() source.Pos {
-	return source.Pos{
-		Line: i.Start.Line,
-		Col:  i.Start.Col + (len(i.Lexeme) - 1),
-	}
-}
-
-func (i DecimalExpr) literalNode() {}
-func (i DecimalExpr) exprNode()    {}
-func (i DecimalExpr) stmtNode()    {}
-
-// StringExpr represents an instance of a string literal in the AST
-type StringExpr struct {
-	Lexeme  string
-	Value   string
-	Start   source.Pos
-	t       *Type
-	casting *Type
-}
-
-func (i StringExpr) IsCast() (bool, *Type) {
-	if i.casting != nil {
-		return true, i.casting
-	}
-
-	return false, nil
-}
-
-func (i StringExpr) Type() *Type {
-	return i.t
+// GetType returns the Type associated with this expression. This should never
+// be called before the expression has been type checked since it will return
+// `nil` in that case
+func (s StrLiteral) GetType() Type {
+	return s._type
 }
 
 // Pos returns the starting source code position of this node
-func (s StringExpr) Pos() source.Pos {
+func (s *StrLiteral) Pos() source.Pos {
 	return s.Start
 }
 
 // End returns the terminal source code position of this node
-func (s StringExpr) End() source.Pos {
+func (s *StrLiteral) End() source.Pos {
 	return source.Pos{
 		Line: s.Start.Line,
 		Col:  s.Start.Col + (len(s.Lexeme) - 1),
 	}
 }
 
-func (s StringExpr) literalNode() {}
-func (s StringExpr) exprNode()    {}
-func (s StringExpr) stmtNode()    {}
+func (*StrLiteral) literalNode() {}
+func (*StrLiteral) exprNode()    {}
+func (*StrLiteral) stmtNode()    {}
+
+// DecLiteral represents an instance of a floating point literal in the AST
+type DecLiteral struct {
+	Lexeme string
+	Value  float32
+	Start  source.Pos
+	_type  *TypeOperator
+}
+
+// SetType populates the `_type` field of this expression (this is done during
+// the type-checking phase)
+func (d *DecLiteral) SetType(_type Type) {
+	d._type = _type.(*TypeOperator)
+}
+
+// GetType returns the Type associated with this expression. This should never
+// be called before the expression has been type checked since it will return
+// `nil` in that case
+func (d *DecLiteral) GetType() Type {
+	return d._type
+}
+
+// Pos returns the starting source code position of this node
+func (d *DecLiteral) Pos() source.Pos {
+	return d.Start
+}
+
+// End returns the terminal source code position of this node
+func (d *DecLiteral) End() source.Pos {
+	return source.Pos{d.Start.Line, d.Start.Col + (len(d.Lexeme) - 1)}
+}
+
+func (*DecLiteral) literalNode() {}
+func (*DecLiteral) exprNode()    {}
+func (*DecLiteral) stmtNode()    {}
+
+// IntLiteral represents an instance of an integer literal in the AST
+type IntLiteral struct {
+	Lexeme string
+	Value  int32
+	Start  source.Pos
+	_type  *TypeOperator
+}
+
+// SetType populates the `_type` field of this expression (this is done during
+// the type-checking phase)
+func (i *IntLiteral) SetType(_type Type) {
+	i._type = _type.(*TypeOperator)
+}
+
+// GetType returns the Type associated with this expression. This should never
+// be called before the expression has been type checked since it will return
+// `nil` in that case
+func (i *IntLiteral) GetType() Type {
+	return i._type
+}
+
+// Pos returns the starting source code position of this node
+func (i *IntLiteral) Pos() source.Pos {
+	return i.Start
+}
+
+// End returns the terminal source code position of this node
+func (i *IntLiteral) End() source.Pos {
+	return source.Pos{
+		Line: i.Start.Line,
+		Col:  i.Start.Col + (len(i.Lexeme) - 1),
+	}
+}
+
+func (*IntLiteral) literalNode() {}
+func (*IntLiteral) exprNode()    {}
+func (*IntLiteral) stmtNode()    {}
+
+// BoolLiteral represents an instance of a boolean keyword literal in the AST
+type BoolLiteral struct {
+    Lexeme string
+    Value  bool
+    Start  source.Pos
+    _type  *TypeOperator
+}
+
+// SetType populates the `_type` field of this expression (this is done during
+// the type-checking phase)
+func (b *BoolLiteral) SetType(_type Type) {
+    b._type = _type.(*TypeOperator)
+}
+
+// GetType returns the Type associated with this expression. This should never
+// be called before the expression has been type checked since it will return
+// `nil` in that case
+func (b *BoolLiteral) GetType() Type {
+	return b._type
+}
+
+// Pos returns the starting source code position of this node
+func (b *BoolLiteral) Pos() source.Pos {
+	return b.Start
+}
+
+// End returns the terminal source code position of this node
+func (b *BoolLiteral) End() source.Pos {
+	return source.Pos{
+		Line: b.Start.Line,
+		Col:  b.Start.Col + (len(b.Lexeme) - 1),
+	}
+}
+
+func (*BoolLiteral) literalNode() {}
+func (*BoolLiteral) exprNode()    {}
+func (*BoolLiteral) stmtNode()    {}
+
+/**
+ * TYPE ANNOTATION NODES
+ *  - these nodes represent the structure of the type annotations used in
+ *    function signatures and elsewhere
+ *  - during the type-checking phase, these nodes are converted to real types
+ */
+
+// TypeAnnotation node represents any type annotation in the AST
+type TypeAnnotation interface {
+	Node
+}
+
+// NamedTypeAnnotation represents a type annotation that consists of only an
+// identifier which will correspond to a type scope
+type NamedTypeAnnotation struct {
+	Name *IdentExpr
+}
+
+// Pos returns the starting source code position of this node
+func (nt NamedTypeAnnotation) Pos() source.Pos {
+	return nt.Name.Pos()
+}
+
+// End returns the terminal source code position of this node
+func (nt NamedTypeAnnotation) End() source.Pos {
+	return nt.Name.End()
+}
+
+type FuncTypeAnnotation struct {
+	LeftParen  Token
+	Parameters []TypeAnnotation
+	RightParen Token
+	ReturnType TypeAnnotation
+}
+
+// Pos returns the starting source code position of this node
+func (fn FuncTypeAnnotation) Pos() source.Pos {
+    // FIXME: parameters don't have to be wrapped in parantheses so the
+    // LeftParen and RightParen fields might not be useful
+	return fn.LeftParen.Span.Start
+}
+
+// End returns the terminal source code position of this node
+func (fn FuncTypeAnnotation) End() source.Pos {
+	return fn.ReturnType.End()
+}
+
+/**
+ * UTILITY NODES
+ *  - utility nodes are not complete syntactic statements or expressions but are
+ *    used by larger AST nodes for internal organization
+ */
+
+// ConditionalBody represents the collection of statements that make up the
+// bodies of conditional statements like If and Loop
+type ConditionalBody struct {
+	Colon      Token
+    Statements []Stmt
+	EndKeyword Token
+}
+
+// Pos returns the starting source code position of this node
+func (c ConditionalBody) Pos() source.Pos {
+	return c.Colon.Span.Start
+}
+
+// End returns the terminal source code position of this node
+func (c ConditionalBody) End() source.Pos {
+	return c.EndKeyword.Span.Start
+}
+
+// FuncBody represents the collection of statements that make up part of a
+// function definition
+type FuncBody struct {
+	LeftBrace  Token
+    Statements []Stmt
+	RightBrace Token
+}
+
+// Pos returns the starting source code position of this node
+func (f FuncBody) Pos() source.Pos {
+	return f.LeftBrace.Span.Start
+}
+
+// End returns the terminal source code position of this node
+func (f FuncBody) End() source.Pos {
+	return f.RightBrace.Span.Start
+}
+
+// Parameter represents an Identifier and an optional TypeAnnotation with that
+// identifier
+type Parameter struct {
+	Name       *IdentExpr
+	Annotation TypeAnnotation
+}
+
+// Pos returns the starting source code position of this node
+func (p Parameter) Pos() source.Pos {
+	return p.Name.Pos()
+}
+
+// End returns the terminal source code position of this node
+func (p Parameter) End() source.Pos {
+	if p.Annotation == nil {
+		return p.Name.End()
+	}
+
+	return p.Annotation.End()
+}

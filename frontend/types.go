@@ -1,124 +1,320 @@
 package frontend
 
 import (
+	"fmt"
+	"strings"
+
+	"github.com/isaacev/Plaid/feedback"
 	"github.com/isaacev/Plaid/source"
 )
 
-// Type represents a type defined in a program. Types can be tagged with the
-// line/column location of its definition
-type Type struct {
-	Name       string
-	Methods    []*Method
-	Definition source.Span
+type Type interface {
+	Equals(Type) bool
+	CastsTo(Type) bool
+	AddMethod(*Method)
+	HasMethod(string, Type) (bool, Type)
+	String() string
+	isType()
 }
 
-func (t *Type) addMethod(method *Method) {
-	t.Methods = append(t.Methods, method)
+type Method struct {
+	operator string
+	root     Type
+	operand  Type
+	result   Type
 }
 
-func (t *Type) hasMethod(operator string, operand *Type) (bool, *Type) {
-	for _, method := range t.Methods {
-		if method.Operator == operator && method.Operand == operand {
-			return true, method.Result
+type AnyType struct {
+	methods []*Method
+}
+
+func (*AnyType) Equals(t2 Type) bool {
+	if _, ok := t2.(*AnyType); ok {
+		return true
+	}
+
+	return false
+}
+
+func (any *AnyType) CastsTo(t2 Type) bool {
+	return any.Equals(t2)
+}
+
+func (any *AnyType) AddMethod(method *Method) {
+	any.methods = append(any.methods, method)
+}
+
+func (any *AnyType) HasMethod(operator string, operand Type) (exists bool, returnType Type) {
+	for _, method := range any.methods {
+		if method.operator == operator && method.operand.Equals(operand) {
+			return true, method.result
 		}
 	}
 
 	return false, nil
 }
 
-type Method struct {
-	Operator string
-	Root     *Type
-	Operand  *Type
-	Result   *Type
+func (*AnyType) String() string {
+	return "Any"
 }
 
-// Signature includes fields for an expression's input types and a single output
-// type. Signatures can also be tagged with the line/column information for
-// where it was defined
-type Signature struct {
-	Output           *Type
-	Inputs           []*Type
-	InputDefinitions []source.Span
-	Definition       source.Span
+func (AnyType) isType() {}
+
+type TypeOperator struct {
+	name    string
+	types   []Type
+	methods []*Method
 }
 
-// typeTable represents the relationships between Types. The table
-// structure is used to determine how disparate types can be coerced into a
-// single shared ancestor. All types can be coerced to the Root Type
-type typeTable struct {
-	AnyType *Type
-	Table   map[string]*Type
-}
+func (op *TypeOperator) Equals(t2 Type) bool {
+	switch v := t2.(type) {
+	case *TypeOperator:
+		// Check if the two types are pointers to the same address
+		if op == v {
+			return true
+		}
 
-// addType adds a new Type to the given type table. If the type is the
-// first to be added to the table, it becomes the Root Type. All types are stored
-// in a map of type names -> *Type structs. The map provides a system for
-// arbitrary type node lookup by type name
-func (table *typeTable) addType(t *Type) {
-	if table.AnyType == nil {
-		table.AnyType = t
+		// Check if the operator names are the same
+		if op.name != v.name {
+			return false
+		}
+
+		// Check that their Type arguments are the same
+		if len(op.types) == len(v.types) {
+			for i, t := range op.types {
+				if t.Equals(v.types[i]) == false {
+					return false
+				}
+			}
+
+			return true
+		}
 	}
 
-	table.Table[t.Name] = t
+	return false
 }
 
-// newTypeTable builds a new table structure and populates it with built-in
-// types including the relationships between those built-in types
-func newTypeTable() *typeTable {
-	table := &typeTable{
-		AnyType: nil,
-		Table:   make(map[string]*Type),
+func (op *TypeOperator) CastsTo(t2 Type) bool {
+	switch v := t2.(type) {
+	case *AnyType:
+		return true
+	case *TypeOperator:
+		// Check if the two types are pointers to the same address
+		if op == v {
+			return true
+		}
+
+		// Check if the operator names are the same
+		if op.name != v.name {
+			return false
+		}
+
+		// Check that their Type arguments are the same
+		if len(op.types) == len(v.types) {
+			for i, t := range op.types {
+				if t.CastsTo(v.types[i]) == false {
+					return false
+				}
+			}
+
+			return true
+		}
 	}
 
-	a := &Type{Name: "Any"}
-	b := &Type{Name: "Bool"}
-	i := &Type{Name: "Int"}
-	d := &Type{Name: "Dec"}
-	s := &Type{Name: "Str"}
+	return false
+}
 
-	// Any logical methods
-	a.addMethod(&Method{Operator: "<", Root: a, Operand: a, Result: b})
-	a.addMethod(&Method{Operator: "<=", Root: a, Operand: a, Result: b})
-	a.addMethod(&Method{Operator: ">", Root: a, Operand: a, Result: b})
-	a.addMethod(&Method{Operator: ">=", Root: a, Operand: a, Result: b})
-	a.addMethod(&Method{Operator: "==", Root: a, Operand: a, Result: b})
+func (op *TypeOperator) AddMethod(method *Method) {
+	op.methods = append(op.methods, method)
+}
 
-	// Bool logical methods
-	b.addMethod(&Method{Operator: "==", Root: b, Operand: b, Result: b})
-	b.addMethod(&Method{Operator: "&&", Root: b, Operand: b, Result: b})
-	b.addMethod(&Method{Operator: "||", Root: b, Operand: b, Result: b})
+func (op TypeOperator) HasMethod(operator string, operand Type) (exists bool, returnType Type) {
+	for _, method := range op.methods {
+		if method.operator == operator && method.operand.Equals(operand) {
+			return true, method.result
+		}
+	}
 
-	// Int arithmetic and comparison methods
-	i.addMethod(&Method{Operator: "+", Root: i, Operand: i, Result: i})
-	i.addMethod(&Method{Operator: "-", Root: i, Operand: i, Result: i})
-	i.addMethod(&Method{Operator: "*", Root: i, Operand: i, Result: i})
-	i.addMethod(&Method{Operator: "/", Root: i, Operand: i, Result: d})
-	i.addMethod(&Method{Operator: "<", Root: i, Operand: i, Result: b})
-	i.addMethod(&Method{Operator: "<=", Root: i, Operand: i, Result: b})
-	i.addMethod(&Method{Operator: ">", Root: i, Operand: i, Result: b})
-	i.addMethod(&Method{Operator: ">=", Root: i, Operand: i, Result: b})
-	i.addMethod(&Method{Operator: "==", Root: i, Operand: i, Result: b})
+	return false, nil
+}
 
-	// Dec arithmetic and comparison methods
-	d.addMethod(&Method{Operator: "+", Root: d, Operand: d, Result: d})
-	d.addMethod(&Method{Operator: "-", Root: d, Operand: d, Result: d})
-	d.addMethod(&Method{Operator: "*", Root: d, Operand: d, Result: d})
-	d.addMethod(&Method{Operator: "/", Root: d, Operand: d, Result: d})
-	d.addMethod(&Method{Operator: "<", Root: d, Operand: d, Result: b})
-	d.addMethod(&Method{Operator: "<=", Root: d, Operand: d, Result: b})
-	d.addMethod(&Method{Operator: ">", Root: d, Operand: d, Result: b})
-	d.addMethod(&Method{Operator: ">=", Root: d, Operand: d, Result: b})
-	d.addMethod(&Method{Operator: "==", Root: d, Operand: d, Result: b})
+func (op TypeOperator) String() string {
+	switch len(op.types) {
+	case 0:
+		return op.name
+	case 2:
+		return fmt.Sprintf("(%s %s %s)",
+			op.types[0],
+			op.name,
+			op.types[1])
+	default:
+		strungTypes := make([]string, len(op.types))
 
-	// Str methods
-	d.addMethod(&Method{Operator: "==", Root: s, Operand: s, Result: b})
+		for i, t := range op.types {
+			strungTypes[i] = t.String()
+		}
 
-	table.addType(a)
-	table.addType(s)
-	table.addType(d)
-	table.addType(i)
-	table.addType(b)
+		return fmt.Sprintf("%s %s",
+			op.name,
+			strings.Join(strungTypes, ", "))
+	}
+}
 
-	return table
+func (TypeOperator) isType() {}
+
+type FuncType struct {
+	params     []Type
+	returnType Type
+	methods    []*Method
+}
+
+func (fn *FuncType) Equals(t2 Type) bool {
+	switch v := t2.(type) {
+	case *FuncType:
+		// Check if the two types are pointers to the same address
+		if fn == v {
+			return true
+		}
+
+		// Check that the return type is the same
+		if fn.returnType.Equals(v.returnType) == false {
+			return false
+		}
+
+		// Check that the arguments have the same types
+		if len(fn.params) == len(v.params) {
+			for i, t := range fn.params {
+				if t.Equals(v.params[i]) == false {
+					return false
+				}
+			}
+
+			return true
+		} else {
+			return false
+		}
+	default:
+		return false
+	}
+}
+
+func (fn *FuncType) CastsTo(t2 Type) bool {
+	switch v := t2.(type) {
+	case *AnyType:
+		return true
+	case *FuncType:
+		// Check if the two types are pointers to the same address
+		if fn == v {
+			return true
+		}
+
+		// Check that the return type is the same
+		if fn.returnType.Equals(v.returnType) == false {
+			return false
+		}
+
+		// Check that the arguments have the same types
+		if len(fn.params) == len(v.params) {
+			for i, t := range fn.params {
+				if t.CastsTo(v.params[i]) == false {
+					return false
+				}
+			}
+
+			return true
+		} else {
+			return false
+		}
+	default:
+		return false
+	}
+}
+
+func (fn *FuncType) AddMethod(method *Method) {
+	fn.methods = append(fn.methods, method)
+}
+
+func (fn FuncType) HasMethod(operator string, operand Type) (exists bool, returnType Type) {
+	for _, method := range fn.methods {
+		if method.operator == operator && method.operand.Equals(operand) {
+			return true, method.result
+		}
+	}
+
+	return false, nil
+}
+
+func (fn FuncType) String() string {
+	if len(fn.params) == 1 {
+		return fmt.Sprintf("(%s => %s)",
+			fn.params[0].String(),
+			fn.returnType.String())
+	}
+
+	return fmt.Sprintf("(%s => %s)",
+		tupleToString(fn.params),
+		fn.returnType.String())
+}
+
+func (FuncType) isType() {}
+
+func tupleToString(tuple []Type) string {
+	str := "("
+
+	for i, t := range tuple {
+		str += t.String()
+
+		if i < len(tuple)-1 {
+			str += ", "
+		}
+	}
+
+	str += ")"
+	return str
+}
+
+func typeAnnotationToType(scope *Scope, annotation TypeAnnotation) (Type, feedback.Message) {
+	switch a := annotation.(type) {
+	case NamedTypeAnnotation:
+		name := a.Name.Name
+		newRef := &TypeOperator{
+			name: a.Name.Name,
+		}
+
+		if exists, typeRef := scope.types.getNamedType(name); exists && typeRef.CastsTo(newRef) {
+			return typeRef, nil
+		}
+
+		return scope.types.builtin.Any, feedback.Error{
+			Classification: feedback.UndefinedTypeError,
+			File:           scope.File,
+			What: feedback.Selection{
+				Description: fmt.Sprintf("Unknown type `%s`", name),
+				Span: source.Span{a.Pos(), a.End()},
+			},
+		}
+	case FuncTypeAnnotation:
+		var params []Type
+
+		for _, p := range a.Parameters {
+			if paramType, err := typeAnnotationToType(scope, p); err != nil {
+				return scope.types.builtin.Any, err
+			} else {
+				params = append(params, paramType)
+			}
+		}
+
+		if returnType, err := typeAnnotationToType(scope, a.ReturnType); err != nil {
+			return scope.types.builtin.Any, err
+		} else {
+			return &FuncType{
+				params:     params,
+				returnType: returnType,
+			}, nil
+		}
+	case nil:
+		return scope.types.builtin.Any, nil
+	default:
+		panic(fmt.Sprintf("Unknown annotation: %T", annotation))
+	}
 }
