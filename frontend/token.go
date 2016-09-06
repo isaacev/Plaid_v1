@@ -19,14 +19,16 @@ type Token struct {
 
 // The most common token symbols are defined as part of the "frontend" package
 const (
-	EOFSymbol     TokenSymbol = "EOF"
-	UnknownSymbol TokenSymbol = "Unknown Token"
-	LParenSymbol  TokenSymbol = "("
-	RParenSymbol  TokenSymbol = ")"
-	CommaSymbol   TokenSymbol = ","
-	ColonSymbol   TokenSymbol = ":"
-	IdentSymbol   TokenSymbol = "Identifier"
-	IntegerSymbol TokenSymbol = "Integer"
-	DecimalSymbol TokenSymbol = "Decimal"
-	StringSymbol  TokenSymbol = "String"
+	EOFSymbol      TokenSymbol = "EOF"
+	UnknownSymbol  TokenSymbol = "Unknown Token"
+	LBracketSymbol TokenSymbol = "["
+	RBracketSymbol TokenSymbol = "]"
+	LParenSymbol   TokenSymbol = "("
+	RParenSymbol   TokenSymbol = ")"
+	CommaSymbol    TokenSymbol = ","
+	ColonSymbol    TokenSymbol = ":"
+	IdentSymbol    TokenSymbol = "Identifier"
+	IntegerSymbol  TokenSymbol = "Integer"
+	DecimalSymbol  TokenSymbol = "Decimal"
+	StringSymbol   TokenSymbol = "String"
 )
