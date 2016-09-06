@@ -10,7 +10,7 @@ import (
 // node (which is assumed to be semantically correct) and returns both a
 // `FuncPrototype` for the top-level main function and a slice of all other
 // function prototypes defined within the AST at any level
-func Compile(prog *frontend.Program) (mainFunc *FuncPrototype, funcs []*FuncPrototype) {
+func Compile(prog *frontend.ProgramNode) (mainFunc *FuncPrototype, funcs []*FuncPrototype) {
 	state := assembly{
 		currFunc:     &FuncPrototype{Bytecode: &Bytecode{}},
 		childFuncs:   make([]*FuncPrototype, 0),
@@ -133,7 +133,7 @@ func (state *assembly) getUpvalueRecord(name string) (exists bool, record fronte
 // `FuncPrototype`, appends that prototype to the global list of all function
 // prototypes, and returns the index of the new prototype in the global
 // prototype list
-func (state *assembly) compileFunction(n *frontend.FuncExpr) (prototypeIndex uint32) {
+func (state *assembly) compileFunction(n *frontend.FuncLiteral) (prototypeIndex uint32) {
 	subState := &assembly{
 		parent:       state,
 		currFunc:     &FuncPrototype{Bytecode: &Bytecode{}},
@@ -174,14 +174,14 @@ func (state *assembly) compileFunction(n *frontend.FuncExpr) (prototypeIndex uin
 // `Bytecode` field
 func (state *assembly) compile(node frontend.Node, destReg RegisterAddress) RegisterAddress {
 	switch n := node.(type) {
-	case *frontend.IntegerExpr:
+	case *frontend.IntLiteral:
 		state.currFunc.Bytecode.Write(IntConst{Value: n.Value, Dest: destReg}.Generate())
 
 		// increment the stackPtr if the integer constant wan't stored in a reserved regsiter
 		if state.isRegisterOnStack(destReg) {
 			state.stackPtr++
 		}
-	case *frontend.FuncExpr:
+	case *frontend.FuncLiteral:
 		constantIndex := state.compileFunction(n)
 		state.currFunc.Bytecode.Write(FuncConst{ConstantIndex: constantIndex, Dest: destReg}.Generate())
 
@@ -199,8 +199,6 @@ func (state *assembly) compile(node frontend.Node, destReg RegisterAddress) Regi
 		} else {
 			return state.lookupLocalRegister(n.Name)
 		}
-	case *frontend.TypeAnnotationStmt:
-		// TODO
 	case *frontend.BinaryExpr:
 		leftReg := state.compile(n.Left, state.stackPtr)
 		rightReg := state.compile(n.Right, state.stackPtr)
@@ -290,7 +288,7 @@ func (state *assembly) compile(node frontend.Node, destReg RegisterAddress) Regi
 
 		// determine which register is holding the closure to call
 		// FIXME handle call to upvalue
-		sourceReg := state.lookupLocalRegister(n.Root.Name)
+		sourceReg := state.compile(n.Root, state.stackPtr)
 
 		// Any values returned from closures are stored at the calling stack
 		// frame's 0th register. The Dispatch/Move instruction pair calls a
@@ -307,8 +305,8 @@ func (state *assembly) compile(node frontend.Node, destReg RegisterAddress) Regi
 	case *frontend.ReturnStmt:
 		sourceReg := RegisterAddress(0)
 
-		if len(n.Arguments) > 0 {
-			sourceReg = state.compile(n.Arguments[0], state.stackPtr)
+		if n.Argument != nil {
+			sourceReg = state.compile(n.Argument, state.stackPtr)
 		}
 
 		state.currFunc.Bytecode.Write(Return{Source: sourceReg}.Generate())

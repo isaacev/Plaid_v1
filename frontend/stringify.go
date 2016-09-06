@@ -5,7 +5,7 @@ import (
 	"strings"
 )
 
-func StringifyAST(prog *Program) string {
+func StringifyAST(prog *ProgramNode) string {
 	return stringifyNode(prog)
 }
 
@@ -13,7 +13,7 @@ func stringifyNode(generic Node) string {
 	const newline = "\n"
 
 	switch node := generic.(type) {
-	case *Program:
+	case *ProgramNode:
 		block := ""
 
 		for i := 0; i < len(node.Statements); i++ {
@@ -28,31 +28,14 @@ func stringifyNode(generic Node) string {
 			len(node.Locals),
 			len(node.Upvalues),
 			indentString(block))
-	case *FuncExpr:
-		return fmt.Sprintf("(func (locals=%d upvalues=%v) %s %s)",
+	case *FuncLiteral:
+		return fmt.Sprintf("(func (locals=%d upvalues=%v) %s: %s %s)",
 			len(node.Locals),
 			len(node.Upvalues),
-			stringifyNode(node.Parameters),
+			stringifyParams(node.Parameters),
+			node._type.returnType.String(),
 			stringifyNode(node.Body))
-	case *FieldList:
-		fields := "("
-
-		for i, field := range node.Fields {
-			fields += stringifyNode(field)
-
-			if i < len(node.Fields)-1 {
-				fields += ", "
-			}
-		}
-
-		return fields + ")"
-	case *TypeAnnotationStmt:
-		if node.ExplicitType {
-			return fmt.Sprintf("[%s %s]", stringifyNode(node.Identifier), stringifyNode(node.Annotation))
-		}
-
-		return fmt.Sprintf("[%s %s]", stringifyNode(node.Identifier), "Any")
-	case *FunctionBody:
+	case *FuncBody:
 		var body string
 
 		for i, stmt := range node.Statements {
@@ -87,24 +70,15 @@ func stringifyNode(generic Node) string {
 		return fmt.Sprintf("(print %s)",
 			stringifyNode(node.Arguments[0]))
 	case *ReturnStmt:
-		if len(node.Arguments) > 0 {
-			var args string
-
-			for i, arg := range node.Arguments {
-				args += stringifyNode(arg)
-
-				if i < len(node.Arguments)-1 {
-					args += ", "
-				}
-			}
-
-			return fmt.Sprintf("(return %s)", args)
+		if node.Argument != nil {
+			return fmt.Sprintf("(return %s)",
+				stringifyNode(node.Argument))
 		} else {
 			return "(return)"
 		}
 	case *DeclarationStmt:
 		return fmt.Sprintf("(let \"%s\" %s)",
-			stringifyNode(node.Assignee),
+			node.Assignee.Name,
 			stringifyNode(node.Assignment))
 	case *AssignmentStmt:
 		return fmt.Sprintf("(set \"%s\" %s)",
@@ -121,22 +95,26 @@ func stringifyNode(generic Node) string {
 			}
 		}
 
-		return fmt.Sprintf("(\"%s\" %s)",
+		return fmt.Sprintf("[%s (%s %s)]",
+			stringifyType(node),
 			stringifyNode(node.Root),
 			args)
 	case *BinaryExpr:
-		return fmt.Sprintf("(%s %s %s)",
+		return fmt.Sprintf("[%s (%s %s %s)]",
+			stringifyType(node),
 			string(node.Operator),
 			stringifyNode(node.Left),
 			stringifyNode(node.Right))
 	case *IdentExpr:
-		return fmt.Sprintf("%s", node.Name)
-	case *IntegerExpr:
-		return fmt.Sprintf("%d", node.Value)
-	case *DecimalExpr:
-		return fmt.Sprintf("%f", node.Value)
-	case *StringExpr:
-		return fmt.Sprintf("`%s`", node.Value)
+		return fmt.Sprintf("[%s %s]",
+			stringifyType(node),
+			node.Name)
+	case *IntLiteral:
+		return fmt.Sprintf("[%s %d]", stringifyType(node), node.Value)
+	case *DecLiteral:
+		return fmt.Sprintf("[%s %.2f]", stringifyType(node), node.Value)
+	case *StrLiteral:
+		return fmt.Sprintf("[%s `%s`]", stringifyType(node), node.Value)
 	default:
 		return fmt.Sprintf("<Unknown %T>", node)
 	}
@@ -150,4 +128,85 @@ func indentString(s string) string {
 	}
 
 	return strings.Join(lines, "\n")
+}
+
+func stringifyType(expr Expr) string {
+	t := expr.GetType()
+
+	if t == nil {
+		return "_"
+	}
+
+	switch t := expr.GetType().(type) {
+	case *TypeOperator:
+		if t == nil {
+			return "-"
+		}
+	case *FuncType:
+		if t == nil {
+			return "-"
+		}
+	}
+
+	return t.String()
+}
+
+func stringifyParams(params []*Parameter) string {
+	out := "("
+
+	for i, param := range params {
+		if param.Annotation == nil {
+			out += param.Name.Name + ": Any"
+		} else {
+			out += fmt.Sprintf("%s: %s",
+				param.Name.Name,
+				stringifyAnnotation(param.Annotation))
+		}
+
+		if i < len(params)-1 {
+			out += ", "
+		}
+	}
+
+	out += ")"
+	return out
+}
+
+func stringifyAnnotation(ta TypeAnnotation) string {
+	switch t := ta.(type) {
+	case NamedTypeAnnotation:
+		return t.Name.Name
+	case FuncTypeAnnotation:
+		out := stringifyAnnotations(t.Parameters...) + " => "
+
+		if _, ok := t.ReturnType.(FuncTypeAnnotation); ok {
+			out += fmt.Sprintf("(%s)",
+				stringifyAnnotation(t.ReturnType))
+		} else {
+			out += stringifyAnnotation(t.ReturnType)
+		}
+
+		return out
+	default:
+		return "Any"
+	}
+}
+
+func stringifyAnnotations(tas ...TypeAnnotation) string {
+	if len(tas) == 1 {
+		return stringifyAnnotation(tas[0])
+	}
+
+	out := "("
+
+	for i, ta := range tas {
+		out += stringifyAnnotation(ta)
+
+		if i < len(tas)-1 {
+			out += ", "
+		}
+	}
+
+	out += ")"
+	return out
 }

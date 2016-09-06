@@ -72,7 +72,7 @@ func digestFile(file *source.File, shouldRun bool) (msgs []feedback.Message) {
 	// Create a new parser and parse the file's syntax, store abstract-syntax-tree
 	// in the variable `ast` and collect any errors/warnings emitted by the
 	// parsing process
-	var ast *frontend.Program
+	var ast *frontend.ProgramNode
 	ast, msgs = frontend.Parse(file)
 
 	// Typecheck the AST and append any errors/warnings to the messages slice

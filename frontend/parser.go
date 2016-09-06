@@ -9,7 +9,7 @@ import (
 
 // Parse takes a file and returns an abstract-syntax-tree and any errors/warnings
 // generated during the parsing process
-func Parse(file *source.File) (ast *Program, msgs []feedback.Message) {
+func Parse(file *source.File) (ast *ProgramNode, msgs []feedback.Message) {
 	var msg feedback.Message
 
 	parser := NewParser(file)
@@ -42,7 +42,7 @@ func NewParser(file *source.File) *Parser {
 	grammar := &Grammar{
 		OperatorRunes:   []rune{'+', '-', '*', '/', ':', '=', '<', '>'},
 		PunctuatorRunes: []rune{'(', ')', '{', '}', ';', ',', '#'},
-		Keywords:        []string{"let", "print", "return", "if", "else", "loop", "end"},
+		Keywords:        []string{"fn", "let", "print", "return", "if", "else", "loop", "end"},
 	}
 
 	lexer := NewLexer(file, grammar)
@@ -59,32 +59,33 @@ func NewParser(file *source.File) *Parser {
 	p.addUnaryParselet(DecimalSymbol, 0, literalParselet)
 	p.addUnaryParselet(StringSymbol, 0, literalParselet)
 	p.addUnaryParselet(IdentSymbol, 0, identParselet)
+	p.addUnaryParselet(TokenSymbol("fn"), 0, funcParselet)
 
-	p.addUnaryParselet(TokenSymbol("("), 0, leadingParenParselet)
-	p.addBinaryParselet(TokenSymbol("("), 101, dispatchParselet)
+	p.addUnaryParselet(LParenSymbol, 0, groupParselet)
+	p.addBinaryParselet(LParenSymbol, 80, dispatchParselet)
 
+	// TODO: should assignment be kept an expression?
 	p.addBinaryParselet(TokenSymbol(":="), 10, assignmentParselet)
-	p.addBinaryParselet(TokenSymbol("::"), 110, typeAssociationParselet)
 
+	// Logical comparison expressions
 	p.addBinaryParselet(TokenSymbol("<"), 40, binaryInfixParselet(40))
 	p.addBinaryParselet(TokenSymbol(">"), 40, binaryInfixParselet(40))
 	p.addBinaryParselet(TokenSymbol("<="), 40, binaryInfixParselet(40))
 	p.addBinaryParselet(TokenSymbol(">="), 40, binaryInfixParselet(40))
 	p.addBinaryParselet(TokenSymbol("=="), 40, binaryInfixParselet(40))
 
+	// Arithmetic expressions
 	p.addBinaryParselet(TokenSymbol("+"), 50, binaryInfixParselet(50))
 	p.addBinaryParselet(TokenSymbol("-"), 50, binaryInfixParselet(50))
 	p.addBinaryParselet(TokenSymbol("*"), 60, binaryInfixParselet(60))
 	p.addBinaryParselet(TokenSymbol("/"), 60, binaryInfixParselet(60))
 
-	p.addBinaryParselet(TokenSymbol("=>"), 100, functionParselet)
-
-	p.addUnaryParselet(TokenSymbol("let"), 100, letDeclarationParselet)
-
-	p.addUnaryParselet(TokenSymbol("print"), 110, printStatementParselet)
-	p.addUnaryParselet(TokenSymbol("return"), 110, returnStatementParselet)
-	p.addUnaryParselet(TokenSymbol("if"), 110, ifStatementParselet)
-	p.addUnaryParselet(TokenSymbol("loop"), 110, loopStatementParselet)
+	// All statements have a binding-power of 0
+	p.addUnaryParselet(TokenSymbol("let"), 0, letDeclarationParselet)
+	p.addUnaryParselet(TokenSymbol("return"), 0, returnStatementParselet)
+	p.addUnaryParselet(TokenSymbol("if"), 0, ifStatementParselet)
+	p.addUnaryParselet(TokenSymbol("loop"), 0, loopStatementParselet)
+	p.addUnaryParselet(TokenSymbol("print"), 0, printStatementParselet)
 
 	return p
 }
@@ -243,32 +244,6 @@ func (p *Parser) parseStatementsUntil(terminator TokenSymbol) (stmts []Stmt, msg
 	}
 }
 
-// parseFunctionBody returns a FunctionBody struct representing the collection
-// of statements between braces in a function body
-func (p *Parser) parseFunctionBody() (body *FunctionBody, msg feedback.Message) {
-	var lBrace Token
-	var stmts []Stmt
-	var rBrace Token
-
-	if lBrace, msg = p.Lexer.ExpectNext(TokenSymbol("{")); msg != nil {
-		return nil, msg
-	}
-
-	if stmts, msg = p.parseStatementsUntil(TokenSymbol("}")); msg != nil {
-		return nil, msg
-	}
-
-	if rBrace, msg = p.Lexer.ExpectNext(TokenSymbol("}")); msg != nil {
-		return nil, msg
-	}
-
-	return &FunctionBody{
-		Statements: stmts,
-		LeftBrace:  lBrace,
-		RightBrace: rBrace,
-	}, nil
-}
-
 // parseConditionalBody returns a ConditionalBody struct representing the
 // statements between a colon and an "end" keyword that make up the body of a
 // conditional statement
@@ -297,10 +272,10 @@ func (p *Parser) parseConditionalBody() (body *ConditionalBody, msg feedback.Mes
 }
 
 // Parse produces an AST from a set of parselets, a grammar and a lexer
-func (p *Parser) Parse() (node *Program, msg feedback.Message) {
+func (p *Parser) Parse() (node *ProgramNode, msg feedback.Message) {
 	stmts, msg := p.parseStatementsUntil(EOFSymbol)
 
-	return &Program{
+	return &ProgramNode{
 		Statements: stmts,
 	}, msg
 }

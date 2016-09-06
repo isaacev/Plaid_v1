@@ -5,17 +5,29 @@ import (
 )
 
 // Scope represents the variable and type environment available at a point in
-// a program's AST. This includes type data stored in the inheritance tree and
+// a program's AST. This includes type data stored in the type table and
 // variable names/type-signatures stored in the variables table. All scopes
 // (except the global scope) have a parent scope for non-local symbol lookup
 type Scope struct {
 	File                *source.File
 	Parent              *Scope
-	inheritanceTree     *inheritanceTree
-	variables           map[string]*Signature
+	types               *typeTable
+	variables           map[string]definitionRecord
 	upvalues            map[string]*UpvalueRecord
 	registeredVariables []string
 	registeredUpvalues  []string
+	returns             []ReturnRecord
+}
+
+type definitionRecord struct {
+	_type Type
+	where definition
+}
+
+type definition struct {
+	wholeDef  source.Span
+	paramDefs []source.Span
+	returnDef source.Span
 }
 
 type UpvalueRecord struct {
@@ -30,9 +42,17 @@ type LocalRecord struct {
 	LookupIndex int
 }
 
-func (s *Scope) registerLocalVariable(name string, sig *Signature) {
+type ReturnRecord struct {
+	Type Type
+	Span source.Span
+}
+
+func (s *Scope) registerLocalVariable(name string, _type Type, def definition) {
 	s.registeredVariables = append(s.registeredVariables, name)
-	s.variables[name] = sig
+	s.variables[name] = definitionRecord{
+		_type: _type,
+		where: def,
+	}
 }
 
 func (s *Scope) registerUpvalue(name string) (upvalueOffset int) {
@@ -61,22 +81,30 @@ func (s *Scope) registerUpvalue(name string) (upvalueOffset int) {
 	return upvalueOffset
 }
 
-func (s *Scope) lookupLocalVariable(name string) (sig *Signature) {
-	if sig, ok := s.variables[name]; ok {
-		return sig
+func (s *Scope) lookupLocalVariable(name string) (_type Type) {
+	if local, ok := s.variables[name]; ok {
+		return local._type
 	}
 
 	return nil
 }
 
-func (s *Scope) lookupVariable(name string) (sig *Signature, isLocal bool) {
-	if sig, ok := s.variables[name]; ok {
-		return sig, true
+func (s *Scope) lookupLocalVariableDefinition(name string) (exists bool, def definition) {
+	if local, ok := s.variables[name]; ok {
+		return true, local.where
+	}
+
+	return false, definition{}
+}
+
+func (s *Scope) lookupVariable(name string) (_type Type, isLocal bool) {
+	if local, ok := s.variables[name]; ok {
+		return local._type, true
 	}
 
 	if s.Parent != nil {
-		sig, _ = s.Parent.lookupVariable(name)
-		return sig, false
+		_type, _ := s.Parent.lookupVariable(name)
+		return _type, false
 	}
 
 	return nil, false
@@ -84,19 +112,19 @@ func (s *Scope) lookupVariable(name string) (sig *Signature, isLocal bool) {
 
 func newGlobalScope(file *source.File) *Scope {
 	return &Scope{
-		File:            file,
-		inheritanceTree: newInheritanceTree(),
-		variables:       make(map[string]*Signature),
-		upvalues:        make(map[string]*UpvalueRecord),
+		File:      file,
+		types:     newTypeTable(),
+		variables: make(map[string]definitionRecord),
+		upvalues:  make(map[string]*UpvalueRecord),
 	}
 }
 
 func (s *Scope) subScope() *Scope {
 	return &Scope{
-		Parent:          s,
-		File:            s.File,
-		inheritanceTree: s.inheritanceTree,
-		variables:       make(map[string]*Signature),
-		upvalues:        make(map[string]*UpvalueRecord),
+		Parent:    s,
+		File:      s.File,
+		types:     s.types,
+		variables: make(map[string]definitionRecord),
+		upvalues:  make(map[string]*UpvalueRecord),
 	}
 }

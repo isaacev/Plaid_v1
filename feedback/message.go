@@ -28,6 +28,7 @@ type Message interface {
 // error occured
 type Selection struct {
 	Description string
+	Verbose     string
 	Span        source.Span
 }
 
@@ -57,8 +58,16 @@ func (w Warning) Make(withColor bool) string {
 
 // Error classification constants
 const (
-	SyntaxError    string = "syntax error"
-	TypeCheckError string = "type check error"
+	IllegalFunctionCall      string = "illegal function call"
+	IllegalStatementError    string = "illegal statement"
+	MismatchedArgumentsError string = "mismatched number of arguments"
+	MismatchedTypeError      string = "mismatched types"
+	RedeclarationError       string = "redeclared variable"
+	SyntaxError              string = "syntax error"
+	TypeAnnotationError      string = "illegal type annotation"
+	TypeCheckError           string = "type check error"
+	UndefinedTypeError       string = "undefined type"
+	UndefinedVariableError   string = "undefined variable"
 )
 
 // Error messages are more serious than warnings and typically cause the
