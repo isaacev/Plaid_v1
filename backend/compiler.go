@@ -118,14 +118,14 @@ func (state *assembly) lookupLocalRegister(name string) RegisterAddress {
 // closure. If `exists` is `true`, the function also returns the appropriate
 // `frontend.UpvalueRecord` corresponding to the upvalue in the current closure.
 // If `exists` is false, the second return value is meaningless
-func (state *assembly) getUpvalueRecord(name string) (exists bool, record frontend.UpvalueRecord) {
-	for _, upvalueRecord := range state.currFunc.Upvalues {
+func (state *assembly) getUpvalueRecord(name string) (exists bool, index int32) {
+	for i, upvalueRecord := range state.currFunc.Upvalues {
 		if upvalueRecord.Name == name {
-			return true, upvalueRecord
+			return true, int32(i)
 		}
 	}
 
-	return false, frontend.UpvalueRecord{}
+	return false, 0
 }
 
 // compileFunction handles the compilation of a `frontend.FuncExpr` node when
@@ -190,8 +190,8 @@ func (state *assembly) compile(node frontend.Node, destReg RegisterAddress) Regi
 			state.stackPtr++
 		}
 	case *frontend.IdentExpr:
-		if exists, record := state.getUpvalueRecord(n.Name); exists {
-			state.currFunc.Bytecode.Write(LoadUpVal{Index: int32(record.LookupIndex), Dest: destReg}.Generate())
+		if exists, index := state.getUpvalueRecord(n.Name); exists {
+			state.currFunc.Bytecode.Write(LoadUpVal{Index: index, Dest: destReg}.Generate())
 
 			if state.isRegisterOnStack(destReg) {
 				state.stackPtr++
@@ -243,11 +243,11 @@ func (state *assembly) compile(node frontend.Node, destReg RegisterAddress) Regi
 			state.currFunc.Bytecode.Write(Move{Source: assignmentReg, Dest: destReg}.Generate())
 		}
 	case *frontend.AssignmentStmt:
-		if exists, record := state.getUpvalueRecord(n.Assignee.Name); exists {
+		if exists, index := state.getUpvalueRecord(n.Assignee.Name); exists {
 			// assignee is an upvalue so the assignment is to be loaded onto the
 			// register-stack and then saved to the upvalue via "SetUpVal"
 			assignmentReg := state.compile(n.Assignment, state.stackPtr)
-			state.currFunc.Bytecode.Write(SetUpVal{Source: assignmentReg, Index: int32(record.LookupIndex)}.Generate())
+			state.currFunc.Bytecode.Write(SetUpVal{Source: assignmentReg, Index: index}.Generate())
 
 			if state.isRegisterOnStack(assignmentReg) {
 				state.stackPtr--
