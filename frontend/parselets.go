@@ -82,7 +82,7 @@ func groupParselet(p *Parser, leftParen Token) (expr Node, err feedback.Message)
 				Classification: feedback.IllegalStatementError,
 				File:           p.Lexer.Scanner.File,
 				What: feedback.Selection{
-					Description: "Expected expression",
+					Description: "Expected an expression",
 					Span:        source.Span{n.Pos(), n.End()},
 				},
 			}
@@ -110,7 +110,7 @@ func binaryInfixParselet(precedence int) binaryParselet {
 
 		if leftExpr, ok = left.(Expr); ok == false {
 			return nil, feedback.Error{
-				Classification: feedback.SyntaxError,
+				Classification: feedback.IllegalStatementError,
 				File:           p.Lexer.Scanner.File,
 				What: feedback.Selection{
 					Description: fmt.Sprintf(
@@ -123,7 +123,7 @@ func binaryInfixParselet(precedence int) binaryParselet {
 
 		if rightExpr, ok = right.(Expr); ok == false {
 			return nil, feedback.Error{
-				Classification: feedback.SyntaxError,
+				Classification: feedback.IllegalStatementError,
 				File:           p.Lexer.Scanner.File,
 				What: feedback.Selection{
 					Description: fmt.Sprintf(
@@ -265,7 +265,7 @@ func dispatchParselet(p *Parser, leftParen Token, left Node) (expr Node, msg fee
 
 		if argExpr, ok = arg.(Expr); ok == false {
 			return nil, feedback.Error{
-				Classification: feedback.SyntaxError,
+				Classification: feedback.IllegalStatementError,
 				File:           p.Lexer.Scanner.File,
 				What: feedback.Selection{
 					Description: fmt.Sprintf("Parameters must be expressions"),
@@ -561,7 +561,7 @@ func returnStatementParselet(p *Parser, returnKeyword Token) (expr Node, msg fee
 
 			if arg, ok = node.(Expr); ok == false {
 				return nil, feedback.Error{
-					Classification: feedback.SyntaxError,
+					Classification: feedback.IllegalStatementError,
 					File:           p.Lexer.Scanner.File,
 					What: feedback.Selection{
 						Description: fmt.Sprintf("Expected an expression"),
