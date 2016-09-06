@@ -49,10 +49,29 @@ func stringifyNode(generic Node) string {
 		return fmt.Sprintf("(\n%s\n)",
 			indentString(body))
 	case *IfStmt:
-		return fmt.Sprintf("(if %s %s)",
-			stringifyNode(node.Condition),
-			stringifyNode(node.Body))
-	case *ConditionalBody:
+		// return fmt.Sprintf("(if %s %s)",
+		// 	stringifyNode(node.IfClause.Condition),
+		// 	stringifyNode(node.IfClause.Body))
+
+		str := fmt.Sprintf("(if %s %s",
+			stringifyNode(node.IfClause.Condition),
+			stringifyNode(node.IfClause.Body))
+
+		for _, clause := range node.ElifClauses {
+			str += fmt.Sprintf(" elif %s %s",
+				stringifyNode(clause.Condition),
+				stringifyNode(clause.Body))
+		}
+
+		if node.ElseClause != nil {
+			str += fmt.Sprintf(" else %s",
+				stringifyNode(node.ElseClause.Body))
+		}
+
+		str += ")"
+
+		return str
+	case *ClauseBody:
 		var body string
 
 		for i, stmt := range node.Statements {

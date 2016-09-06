@@ -107,31 +107,61 @@ func checkProgramNode(scope *Scope, node *ProgramNode) (msgs []feedback.Message)
 }
 
 func checkIfStmt(scope *Scope, stmt *IfStmt) (msgs []feedback.Message) {
-	msgs = append(msgs, checkExpr(scope, stmt.Condition)...)
+	msgs = append(msgs, checkExpr(scope, stmt.IfClause.Condition)...)
 
-	if stmt.Condition.GetType().CastsTo(scope.types.builtin.Bool) == false {
+	if stmt.IfClause.Condition.GetType().CastsTo(scope.types.builtin.Bool) == false {
 		// If statement expects the test condition to evaluate to type `Bool`,
 		// emit this error if the condition evaluates to some other type
 		msgs = append(msgs, feedback.Error{
 			Classification: feedback.MismatchedTypeError,
 			File:           scope.File,
 			What: feedback.Selection{
-				Description: fmt.Sprintf("condition must have type `%s`, instead found `%s`",
+				Description: fmt.Sprintf("condition must have type `%s`, instead found type `%s`",
 					scope.types.builtin.Bool.String(),
-					stmt.Condition.GetType().String()),
-				Span: source.Span{stmt.Condition.Pos(), stmt.Condition.End()},
+					stmt.IfClause.Condition.GetType().String()),
+				Span: source.Span{stmt.IfClause.Condition.Pos(), stmt.IfClause.Condition.End()},
 			},
 		})
 	}
 
-	msgs = append(msgs, checkConditionalBody(scope, stmt.Body)...)
+	// Check statements in the `if` clause body
+	msgs = append(msgs, checkClauseBody(scope, stmt.IfClause.Body)...)
+
+	// Check any `elif` clauses
+	for _, clause := range stmt.ElifClauses {
+		msgs = append(msgs, checkExpr(scope, clause.Condition)...)
+
+		if clause.Condition.GetType().CastsTo(scope.types.builtin.Bool) == false {
+			// `elif` clause expects the test condition to evaluate to type `Bool`,
+			// emit this error if the condition evaluates to some other type
+			msgs = append(msgs, feedback.Error{
+				Classification: feedback.MismatchedTypeError,
+				File:           scope.File,
+				What: feedback.Selection{
+					Description: fmt.Sprintf("condition must have type `%s`, instead found type `%s`",
+						scope.types.builtin.Bool.String(),
+						clause.Condition.GetType().String()),
+					Span: source.Span{clause.Condition.Pos(), clause.Condition.End()},
+				},
+			})
+		}
+
+		// Check statements in the `elif` clause body
+		msgs = append(msgs, checkClauseBody(scope, clause.Body)...)
+	}
+
+	// Check the `else` clause if it exists
+	if stmt.ElseClause != nil {
+		msgs = append(msgs, checkClauseBody(scope, stmt.ElseClause.Body)...)
+	}
+
 	return msgs
 }
 
 func checkLoopStmt(scope *Scope, stmt *LoopStmt) (msgs []feedback.Message) {
-	msgs = append(msgs, checkExpr(scope, stmt.Condition)...)
+	msgs = append(msgs, checkExpr(scope, stmt.Clause.Condition)...)
 
-	if stmt.Condition.GetType().CastsTo(scope.types.builtin.Bool) == false {
+	if stmt.Clause.Condition.GetType().CastsTo(scope.types.builtin.Bool) == false {
 		// Loop statement expects the test condition to evaluate to type `Bool`,
 		// emit this error if the condition evaluates to some other type
 		msgs = append(msgs, feedback.Error{
@@ -140,17 +170,17 @@ func checkLoopStmt(scope *Scope, stmt *LoopStmt) (msgs []feedback.Message) {
 			What: feedback.Selection{
 				Description: fmt.Sprintf("condition must have type `%s`, instead found `%s`",
 					scope.types.builtin.Bool.String(),
-					stmt.Condition.GetType().String()),
-				Span: source.Span{stmt.Condition.Pos(), stmt.Condition.End()},
+					stmt.Clause.Condition.GetType().String()),
+				Span: source.Span{stmt.Clause.Condition.Pos(), stmt.Clause.Condition.End()},
 			},
 		})
 	}
 
-	msgs = append(msgs, checkConditionalBody(scope, stmt.Body)...)
+	msgs = append(msgs, checkClauseBody(scope, stmt.Clause.Body)...)
 	return msgs
 }
 
-func checkConditionalBody(scope *Scope, body *ConditionalBody) (msgs []feedback.Message) {
+func checkClauseBody(scope *Scope, body *ClauseBody) (msgs []feedback.Message) {
 	for _, stmt := range body.Statements {
 		msgs = append(msgs, checkStmt(scope, stmt)...)
 	}

@@ -395,7 +395,7 @@ func funcBodyParselet(p *Parser) (body *FuncBody, msg feedback.Message) {
 		return nil, msg
 	}
 
-	if stmts, msg = p.parseStatementsUntil(TokenSymbol("}")); msg != nil {
+	if stmts, msg = p.parseStatementsUntil(func (tok Token) bool { return tok.Symbol == TokenSymbol("}") }); msg != nil {
 		return nil, msg
 	}
 
@@ -581,16 +581,27 @@ func returnStatementParselet(p *Parser, returnKeyword Token) (expr Node, msg fee
 }
 
 func ifStatementParselet(p *Parser, ifKeyword Token) (expr Node, msg feedback.Message) {
-	var condition Expr
-	var node Node
+	ifClause := &Clause{
+		Keyword: ifKeyword,
+		Body:    &ClauseBody{},
+	}
 
-	if node, msg = p.parseExpression(0); msg == nil {
-		if e, ok := node.(Expr); ok {
-			// if-condition is an expression, not a statement
-			condition = e
-		} else {
+	ifStmt := &IfStmt{
+		IfClause: ifClause,
+	}
+
+	// Parse the test condition, is returned as a statement
+	if node, msg := p.parseExpression(0); msg != nil {
+		return nil, msg
+	} else {
+		var ok bool
+
+		// Try to convert the condition node to an expression, emit an error if the
+		// conversion fails
+		if ifClause.Condition, ok = node.(Expr); ok == false {
+			// Condition is a statement, not an expression
 			return nil, feedback.Error{
-				Classification: feedback.SyntaxError,
+				Classification: feedback.IllegalStatementError,
 				File:           p.Lexer.Scanner.File,
 				What: feedback.Selection{
 					Description: fmt.Sprintf("Expected a conditional expression"),
@@ -598,54 +609,178 @@ func ifStatementParselet(p *Parser, ifKeyword Token) (expr Node, msg feedback.Me
 				},
 			}
 		}
-	} else {
+	}
+
+	// Consume the colon after the test condition, before the body statements
+	if ifClause.Body.Colon, msg = p.Lexer.ExpectNext(ColonSymbol); msg != nil {
 		return nil, msg
 	}
 
-	var body *ConditionalBody
+	endIfClauseTest := func(tok Token) bool {
+		return tok.Symbol == TokenSymbol("elif") ||
+			tok.Symbol == TokenSymbol("else") ||
+			tok.Symbol == TokenSymbol("end")
+	}
 
-	if body, msg = p.parseConditionalBody(); msg != nil {
+	// Consume the statements in the clause body
+	if ifClause.Body.Statements, msg = p.parseStatementsUntil(endIfClauseTest); msg != nil {
 		return nil, msg
 	}
 
-	return &IfStmt{
-		IfKeyword: ifKeyword,
-		Condition: condition,
-		Body:      body,
-	}, nil
+	// Parse any `elif` clauses
+	if p.Lexer.PeekMatches(TokenSymbol("elif")) {
+		for {
+			elifClause := &Clause{
+				Body: &ClauseBody{},
+			}
+
+			// Parse the `elif` keyword at the start of the clause
+			if elifClause.Keyword, msg = p.Lexer.ExpectNext(TokenSymbol("elif")); msg != nil {
+				return nil, msg
+			}
+
+			// Parse the test condition
+			if node, msg := p.parseExpression(0); msg != nil {
+				return nil, msg
+			} else {
+				var ok bool
+
+				// Try to convert the condition node to an expression, emit an error if the
+				// conversion fails
+				if elifClause.Condition, ok = node.(Expr); ok == false {
+					// Condition is a statement, not an expression
+					return nil, feedback.Error{
+						Classification: feedback.IllegalStatementError,
+						File:           p.Lexer.Scanner.File,
+						What: feedback.Selection{
+							Description: fmt.Sprintf("Expected a conditional expression"),
+							Span:        source.Span{Start: node.Pos(), End: node.End()},
+						},
+					}
+				}
+			}
+
+			// Consume the colon after the test condition, before the body statements
+			if elifClause.Body.Colon, msg = p.Lexer.ExpectNext(ColonSymbol); msg != nil {
+				return nil, msg
+			}
+
+			endElifClauseTest := func(tok Token) bool {
+				return tok.Symbol == TokenSymbol("elif") ||
+					tok.Symbol == TokenSymbol("else") ||
+					tok.Symbol == TokenSymbol("end")
+			}
+
+			// Consume the statements in the clause body until one of the
+			// possible terminator keywords are reached
+			if elifClause.Body.Statements, msg = p.parseStatementsUntil(endElifClauseTest); msg != nil {
+				return nil, msg
+			}
+
+			// Append `elif` clause to the list of `elif` clauses
+			ifStmt.ElifClauses = append(ifStmt.ElifClauses, elifClause)
+
+			if p.Lexer.PeekMatches(TokenSymbol("elif")) {
+				continue
+			} else if p.Lexer.PeekMatches(TokenSymbol("else")) || p.Lexer.PeekMatches(TokenSymbol("end")) {
+				break
+			} else {
+				tok, _ := p.Lexer.Next()
+
+				// Next token was not an `end` keyword or an `elif` keyword
+				// as expected so emit an error
+				return nil, feedback.Error{
+					Classification: feedback.SyntaxError,
+					File:           p.Lexer.Scanner.File,
+					What: feedback.Selection{
+						Description: "Unexpected keyword",
+						Span:        tok.Span,
+					},
+				}
+			}
+		}
+	}
+
+	// Parse an optional `else` clause
+	if p.Lexer.PeekMatches(TokenSymbol("else")) {
+		elseClause := &Clause{
+			Body: &ClauseBody{},
+		}
+
+		// Parse the `else` keyword at the start of the clause
+		if elseClause.Keyword, msg = p.Lexer.ExpectNext(TokenSymbol("else")); msg != nil {
+			return nil, msg
+		}
+
+		// Consume the colon after the `else` keyword, before the clause statements
+		if elseClause.Body.Colon, msg = p.Lexer.ExpectNext(ColonSymbol); msg != nil {
+			return nil, msg
+		}
+
+		endElseClauseTest := func(tok Token) bool {
+			return tok.Symbol == TokenSymbol("end")
+		}
+
+		if elseClause.Body.Statements, msg = p.parseStatementsUntil(endElseClauseTest); msg != nil {
+			return nil, msg
+		}
+
+		ifStmt.ElseClause = elseClause
+	}
+
+	// Consume the `end` keyword at the end of the `if` statement
+	if ifStmt.EndKeyword, msg = p.Lexer.ExpectNext(TokenSymbol("end")); msg != nil {
+		return nil, msg
+	}
+
+	return ifStmt, nil
 }
 
 func loopStatementParselet(p *Parser, loopKeyword Token) (expr Node, msg feedback.Message) {
-	var condition Expr
-	var node Node
+	clause := &Clause{
+		Keyword: loopKeyword,
+		Body: &ClauseBody{},
+	}
 
-	if node, msg = p.parseExpression(0); msg == nil {
-		if e, ok := node.(Expr); ok {
-			// if-condition is an expression, not a statement
-			condition = e
-		} else {
+	stmt := &LoopStmt{
+		Clause: clause,
+	}
+
+	if node, msg := p.parseExpression(0); msg != nil {
+		return nil, msg
+	} else {
+		var ok bool
+
+		if clause.Condition, ok = node.(Expr); ok == false {
 			return nil, feedback.Error{
-				Classification: feedback.SyntaxError,
+				Classification: feedback.IllegalStatementError,
 				File:           p.Lexer.Scanner.File,
 				What: feedback.Selection{
-					Description: fmt.Sprintf("Expected a conditional expression"),
+					Description: fmt.Sprintf("Expected a condiional expression, found a statement"),
 					Span:        source.Span{Start: node.Pos(), End: node.End()},
 				},
 			}
 		}
-	} else {
+	}
+
+	// Consume the colon after the test condition, before the body statements
+	if clause.Body.Colon, msg = p.Lexer.ExpectNext(ColonSymbol); msg != nil {
 		return nil, msg
 	}
 
-	var body *ConditionalBody
+	endBodyTest := func (tok Token) bool {
+		return tok.Symbol == TokenSymbol("end")
+	}
 
-	if body, msg = p.parseConditionalBody(); msg != nil {
+	// Consume the statements in the clause body
+	if clause.Body.Statements, msg = p.parseStatementsUntil(endBodyTest); msg != nil {
 		return nil, msg
 	}
 
-	return &LoopStmt{
-		LoopKeyword: loopKeyword,
-		Condition:   condition,
-		Body:        body,
-	}, nil
+	// Consume the `end` keyword after the clause body
+	if stmt.EndKeyword, msg = p.Lexer.ExpectNext(TokenSymbol("end")); msg != nil {
+		return nil, msg
+	}
+
+	return stmt, nil
 }

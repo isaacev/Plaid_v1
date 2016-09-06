@@ -57,38 +57,38 @@ type Stmt interface {
 
 // IfStmt represents a basic conditional statement
 type IfStmt struct {
-	IfKeyword Token
-	Condition Expr
-	Body      *ConditionalBody
+	IfClause    *Clause
+	ElifClauses []*Clause
+	ElseClause  *Clause
+	EndKeyword  Token
 }
 
 // Pos returns the starting source code position of this node
 func (i IfStmt) Pos() source.Pos {
-	return i.IfKeyword.Span.Start
+	return i.IfClause.Pos()
 }
 
 // End returns the terminal source code position of this node
 func (i IfStmt) End() source.Pos {
-	return i.Body.End()
+	return i.EndKeyword.Span.End
 }
 
 func (IfStmt) stmtNode() {}
 
 // LoopStmt represents a loop statement
 type LoopStmt struct {
-	LoopKeyword Token
-	Condition   Expr
-	Body        *ConditionalBody
+	Clause     *Clause
+	EndKeyword Token
 }
 
 // Pos returns the starting source code position of this node
 func (l LoopStmt) Pos() source.Pos {
-	return l.LoopKeyword.Span.Start
+	return l.Clause.Pos()
 }
 
 // End returns the terminal source code position of this node
 func (l LoopStmt) End() source.Pos {
-	return l.Body.End()
+	return l.EndKeyword.Span.End
 }
 
 func (LoopStmt) stmtNode() {}
@@ -554,22 +554,43 @@ func (fn FuncTypeAnnotation) End() source.Pos {
  *    used by larger AST nodes for internal organization
  */
 
-// ConditionalBody represents the collection of statements that make up the
-// bodies of conditional statements like If and Loop
-type ConditionalBody struct {
-	Colon      Token
-	Statements []Stmt
-	EndKeyword Token
+// Clause represents a test/body pair in flow control statements. The
+// `Keyword` field is populated by tokens like `if`, `elif`, `else`, and `while`
+type Clause struct {
+	Keyword   Token
+	Condition Expr
+	Body      *ClauseBody
 }
 
 // Pos returns the starting source code position of this node
-func (c ConditionalBody) Pos() source.Pos {
+func (c Clause) Pos() source.Pos {
+	return c.Keyword.Span.Start
+}
+
+// End returns the terminal source code position of this node
+func (c Clause) End() source.Pos {
+	return c.Body.End()
+}
+
+// ClauseBody represents the collection of statements that make up the
+// bodies of conditional statements like If and Loop
+type ClauseBody struct {
+	Colon      Token
+	Statements []Stmt
+}
+
+// Pos returns the starting source code position of this node
+func (c ClauseBody) Pos() source.Pos {
 	return c.Colon.Span.Start
 }
 
 // End returns the terminal source code position of this node
-func (c ConditionalBody) End() source.Pos {
-	return c.EndKeyword.Span.Start
+func (c ClauseBody) End() source.Pos {
+	if len(c.Statements) > 0 {
+		return c.Statements[len(c.Statements)-1].End()
+	}
+
+	return c.Colon.Span.End
 }
 
 // FuncBody represents the collection of statements that make up part of a

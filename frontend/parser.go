@@ -48,6 +48,7 @@ func NewParser(file *source.File) *Parser {
 			"print",
 			"return",
 			"if",
+			"elif",
 			"else",
 			"loop",
 			"end",
@@ -211,9 +212,9 @@ func (p *Parser) parseExpression(precedence int) (node Node, msg feedback.Messag
 }
 
 // parseStatementsUntil collects statements until it encounters a token matching
-// the given "terminator" parameter. This function is used to parse the bodies
-// of functions and conditional statements
-func (p *Parser) parseStatementsUntil(terminator TokenSymbol) (stmts []Stmt, msg feedback.Message) {
+// the given "terminatorMatches" function. This function is used to parse the
+// bodies of functions and conditional statements
+func (p *Parser) parseStatementsUntil(terminatorMatches func(Token) bool) (stmts []Stmt, msg feedback.Message) {
 	for {
 		var tok Token
 		var node Node
@@ -247,42 +248,17 @@ func (p *Parser) parseStatementsUntil(terminator TokenSymbol) (stmts []Stmt, msg
 			}
 		}
 
-		if p.Lexer.PeekMatches(terminator) {
+		if tok, msg := p.Lexer.Peek(); msg != nil {
+			return nil, msg
+		} else if terminatorMatches(tok) {
 			return stmts, nil
 		}
 	}
 }
 
-// parseConditionalBody returns a ConditionalBody struct representing the
-// statements between a colon and an "end" keyword that make up the body of a
-// conditional statement
-func (p *Parser) parseConditionalBody() (body *ConditionalBody, msg feedback.Message) {
-	var colon Token
-	var stmts []Stmt
-	var endKeyword Token
-
-	if colon, msg = p.Lexer.ExpectNext(TokenSymbol(":")); msg != nil {
-		return nil, msg
-	}
-
-	if stmts, msg = p.parseStatementsUntil(TokenSymbol("end")); msg != nil {
-		return nil, msg
-	}
-
-	if endKeyword, msg = p.Lexer.ExpectNext(TokenSymbol("end")); msg != nil {
-		return nil, msg
-	}
-
-	return &ConditionalBody{
-		Statements: stmts,
-		Colon:      colon,
-		EndKeyword: endKeyword,
-	}, nil
-}
-
 // Parse produces an AST from a set of parselets, a grammar and a lexer
 func (p *Parser) Parse() (node *ProgramNode, msg feedback.Message) {
-	stmts, msg := p.parseStatementsUntil(EOFSymbol)
+	stmts, msg := p.parseStatementsUntil(func (tok Token) bool { return tok.Symbol == EOFSymbol })
 
 	return &ProgramNode{
 		Statements: stmts,
