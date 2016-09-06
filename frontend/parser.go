@@ -41,7 +41,7 @@ type Parser struct {
 func NewParser(file *source.File) *Parser {
 	grammar := &Grammar{
 		OperatorRunes:   []rune{'+', '-', '*', '/', ':', '=', '<', '>'},
-		PunctuatorRunes: []rune{'(', ')', '{', '}', ';', ',', '#'},
+		PunctuatorRunes: []rune{'[', ']', '(', ')', '{', '}', ';', ',', '#'},
 		Keywords: []string{
 			"fn",
 			"let",
@@ -70,6 +70,7 @@ func NewParser(file *source.File) *Parser {
 	p.addUnaryParselet(StringSymbol, 0, literalParselet)
 	p.addUnaryParselet(IdentSymbol, 0, identParselet)
 	p.addUnaryParselet(TokenSymbol("fn"), 0, funcParselet)
+	p.addUnaryParselet(LBracketSymbol, 0, listParselet)
 
 	p.addUnaryParselet(LParenSymbol, 0, groupParselet)
 	p.addBinaryParselet(LParenSymbol, 80, dispatchParselet)

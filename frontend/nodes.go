@@ -309,6 +309,41 @@ type Literal interface {
 	literalNode()
 }
 
+// ListLiteral represents a collection of 0 or more values
+type ListLiteral struct {
+	LeftBracket  Token
+	Elements     []Expr
+	RightBracket Token
+	_type        *ListType
+}
+
+// SetType populates the `_type` field of this expression (this is done during
+// the type-checking phase)
+func (l *ListLiteral) SetType(_type Type) {
+	l._type = _type.(*ListType)
+}
+
+// GetType returns the Type associated with this expression. This should never
+// be called before the expression has been type checked since it will return
+// `nil` in that case
+func (l *ListLiteral) GetType() Type {
+	return l._type
+}
+
+// Pos returns the starting source code position of this node
+func (l *ListLiteral) Pos() source.Pos {
+	return l.LeftBracket.Span.Start
+}
+
+// End returns the terminal source code position of this node
+func (l *ListLiteral) End() source.Pos {
+	return l.RightBracket.Span.End
+}
+
+func (*ListLiteral) literalNode() {}
+func (*ListLiteral) exprNode()    {}
+func (*ListLiteral) stmtNode()    {}
+
 // FuncLiteral represents an anonymous function definition
 type FuncLiteral struct {
 	FnKeyword        Token
@@ -546,6 +581,24 @@ func (fn FuncTypeAnnotation) Pos() source.Pos {
 // End returns the terminal source code position of this node
 func (fn FuncTypeAnnotation) End() source.Pos {
 	return fn.ReturnType.End()
+}
+
+// ListTypeAnnotation represents a type annotation that corresponds the list
+// where each element can be cast to `ElementType`
+type ListTypeAnnotation struct {
+	LeftBracket  Token
+	ElementType  TypeAnnotation
+	RightBracket Token
+}
+
+// Pos returns the starting source code position of this node
+func (lt ListTypeAnnotation) Pos() source.Pos {
+	return lt.LeftBracket.Span.Start
+}
+
+// End returns the terminal source code position of this node
+func (lt ListTypeAnnotation) End() source.Pos {
+	return lt.RightBracket.Span.End
 }
 
 /**

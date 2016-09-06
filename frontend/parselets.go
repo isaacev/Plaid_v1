@@ -384,6 +384,56 @@ func funcParselet(p *Parser, fnKeyword Token) (expr Node, err feedback.Message) 
 	return funcLiteral, nil
 }
 
+func listParselet(p *Parser, lBracket Token) (expr Node, err feedback.Message) {
+	var elements []Expr
+	var rBracket Token
+
+	// Consume any inner expression elements
+	for {
+		if p.Lexer.PeekMatches(RBracketSymbol) {
+			break
+		}
+
+		if node, err := p.parseExpression(0); err != nil {
+			return nil, err
+		} else {
+			if elem, ok := node.(Expr); ok == false {
+				return nil, feedback.Error{
+					Classification: feedback.IllegalStatementError,
+					File:           p.Lexer.Scanner.File,
+					What: feedback.Selection{
+						Description: "Expected an expression",
+						Span:        source.Span{Start: node.Pos(), End: node.End()},
+					},
+				}
+			} else {
+				elements = append(elements, elem)
+			}
+		}
+
+		// Parser expects a comma after the expression in order to continue
+		// parsing elements. Otherwise the loop breaks and will expect a closing
+		// right-bracket
+		if p.Lexer.PeekMatches(CommaSymbol) {
+			p.Lexer.ExpectNext(CommaSymbol)
+			continue
+		}
+
+		break
+	}
+
+	// Consume the right bracket closing the expression
+	if rBracket, err = p.Lexer.ExpectNext(RBracketSymbol); err != nil {
+		return nil, err
+	}
+
+	return &ListLiteral{
+		LeftBracket: lBracket,
+		Elements: elements,
+		RightBracket: rBracket,
+	}, nil
+}
+
 // parseFuncBody returns a FuncBody struct representing the collection
 // of statements between braces in a function body
 func funcBodyParselet(p *Parser) (body *FuncBody, msg feedback.Message) {
@@ -415,7 +465,25 @@ func typeAnnotationParselet(p *Parser) (annotation TypeAnnotation, msg feedback.
 	var params []TypeAnnotation
 	var returnAnnotation TypeAnnotation
 
-	if p.Lexer.PeekMatches(TokenSymbol("(")) {
+	if p.Lexer.PeekMatches(LBracketSymbol) {
+		anno := ListTypeAnnotation{}
+
+		// Consume the left-bracket
+		if anno.LeftBracket, msg = p.Lexer.ExpectNext(LBracketSymbol); msg != nil {
+			return nil, msg
+		}
+
+		// Consume inner annotation
+		if anno.ElementType, msg = typeAnnotationParselet(p); msg != nil {
+			return nil, msg
+		}
+
+		if anno.RightBracket, msg = p.Lexer.ExpectNext(RBracketSymbol); msg != nil {
+			return nil, msg
+		}
+
+		return anno, nil
+	} else if p.Lexer.PeekMatches(TokenSymbol("(")) {
 		// Consume the left-paren
 		if leftParen, msg = p.Lexer.ExpectNext(TokenSymbol("(")); msg != nil {
 			return nil, msg

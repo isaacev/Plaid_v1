@@ -262,6 +262,50 @@ func (fn FuncType) String() string {
 
 func (FuncType) isType() {}
 
+type ListType struct {
+	elementType Type
+	methods     []*Method
+}
+
+func (lt *ListType) Equals(t2 Type) bool {
+	if listT2, ok := t2.(*ListType); ok {
+		return lt.elementType.Equals(listT2.elementType)
+	}
+
+	return false
+}
+
+func (lt *ListType) CastsTo(t2 Type) bool {
+	switch v := t2.(type) {
+	case *AnyType:
+		return true
+	case *ListType:
+		return lt.elementType.CastsTo(v.elementType)
+	}
+
+	return false
+}
+
+func (lt *ListType) AddMethod(method *Method) {
+	lt.methods = append(lt.methods, method)
+}
+
+func (lt *ListType) HasMethod(operator string, operand Type) (exists bool, returnType Type) {
+	for _, method := range lt.methods {
+		if method.operator == operator && method.operand.Equals(operand) {
+			return true, method.result
+		}
+	}
+
+	return false, nil
+}
+
+func (lt *ListType) String() string {
+	return fmt.Sprintf("[%s]", lt.elementType.String())
+}
+
+func (ListType) isType() {}
+
 func tupleToString(tuple []Type) string {
 	str := "("
 
@@ -314,6 +358,14 @@ func typeAnnotationToType(scope *Scope, annotation TypeAnnotation) (Type, feedba
 			return &FuncType{
 				params:     params,
 				returnType: returnType,
+			}, nil
+		}
+	case ListTypeAnnotation:
+		if elementType, err := typeAnnotationToType(scope, a.ElementType); err != nil {
+			return scope.types.builtin.Any, err
+		} else {
+			return &ListType{
+				elementType: elementType,
 			}, nil
 		}
 	case nil:

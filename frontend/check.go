@@ -61,6 +61,8 @@ func checkExpr(scope *Scope, expr Expr) (msgs []feedback.Message) {
 
 func checkLiteral(scope *Scope, lit Literal) (msgs []feedback.Message) {
 	switch l := lit.(type) {
+	case *ListLiteral:
+		return checkListLiteral(scope, l)
 	case *FuncLiteral:
 		return checkFuncLiteral(scope, l)
 	case *StrLiteral:
@@ -494,6 +496,42 @@ func checkIdentExpr(scope *Scope, expr *IdentExpr) (msgs []feedback.Message) {
 		scope.registerUpvalue(expr.Name)
 		expr.SetType(t)
 	}
+
+	return msgs
+}
+
+func checkListLiteral(scope *Scope, expr *ListLiteral) (msgs []feedback.Message) {
+	var spanningType Type = nil
+
+	for _, elem := range expr.Elements {
+		msgs = append(msgs, checkExpr(scope, elem)...)
+
+		// Only try to condense the spanning type if it isn't already classified
+		// as type `Any`
+		if spanningType != scope.types.builtin.Any {
+			if spanningType == nil {
+				// First element automatically assigned to spanning type
+				spanningType = elem.GetType()
+			} else if spanningType.CastsTo(elem.GetType()) {
+				// Element's type is higher than the current spanning type
+				// so set the spanning type to the current element's type
+				spanningType = elem.GetType()
+			} else if spanningType.Equals(elem.GetType()) == false {
+				// Spanning type and element type can't be reconciled other than
+				// via type `Any`
+				spanningType = scope.types.builtin.Any
+			}
+		}
+	}
+
+	if spanningType == nil {
+		spanningType = scope.types.builtin.Any
+	}
+
+	// Create new list type for this list literal
+	expr.SetType(&ListType{
+		elementType: spanningType,
+	})
 
 	return msgs
 }

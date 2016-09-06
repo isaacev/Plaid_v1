@@ -128,6 +128,22 @@ func stringifyNode(generic Node) string {
 		return fmt.Sprintf("[%s %s]",
 			stringifyType(node),
 			node.Name)
+	case *ListLiteral:
+		var elements string
+
+		for i, elem := range node.Elements {
+			elements += stringifyNode(elem)
+
+			if i < len(node.Elements)-1 {
+				elements += ", "
+			}
+		}
+
+		if len(node.Elements) == 0 {
+			elements = "<empty>"
+		}
+
+		return fmt.Sprintf("[%s (list %s)]", stringifyType(node), elements)
 	case *IntLiteral:
 		return fmt.Sprintf("[%s %d]", stringifyType(node), node.Value)
 	case *DecLiteral:
@@ -206,6 +222,8 @@ func stringifyAnnotation(ta TypeAnnotation) string {
 		}
 
 		return out
+	case ListTypeAnnotation:
+		return fmt.Sprintf("[%s]", stringifyAnnotation(t.ElementType))
 	default:
 		return "Any"
 	}

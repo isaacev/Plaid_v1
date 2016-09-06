@@ -80,6 +80,7 @@ func (g *Grammar) canInsertSemicolonAfter(tok Token) (matches bool) {
 		tok.Symbol == StringSymbol ||
 		(tok.Symbol == TokenSymbol("return")) ||
 		(tok.Symbol == TokenSymbol("end")) ||
+		(tok.Symbol == RBracketSymbol) ||
 		(tok.Symbol == TokenSymbol("}")) ||
 		(tok.Symbol == TokenSymbol(")")))
 }
