@@ -153,17 +153,17 @@ func stringifyType(expr Expr) string {
 	t := expr.GetType()
 
 	if t == nil {
-		return "_"
+		return "???"
 	}
 
 	switch t := expr.GetType().(type) {
 	case *TypeOperator:
 		if t == nil {
-			return "-"
+			return "???"
 		}
 	case *FuncType:
 		if t == nil {
-			return "-"
+			return "???"
 		}
 	}
 
