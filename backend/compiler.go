@@ -268,6 +268,14 @@ func (state *assembly) compile(node frontend.Node, destReg RegisterAddress) Regi
 		// First parameter register defaults to r0 if no arguments are given
 		firstArgRegister := RegisterAddress(0)
 
+		// determine which register is holding the closure to call
+		// FIXME handle call to upvalue
+		sourceReg := state.compile(n.Root, state.stackPtr)
+
+		if state.isRegisterOnStack(sourceReg) {
+			state.stackPtr++
+		}
+
 		// Compile any argument expressions and store their output on the
 		// register stack. Record the register storing the output of the first
 		// argument since that register will become part of the Dispatch
@@ -285,10 +293,6 @@ func (state *assembly) compile(node frontend.Node, destReg RegisterAddress) Regi
 		// reset stack pointer so that any temporary parameters written as
 		// function arguments will can be overwritten
 		state.stackPtr = firstArgRegister
-
-		// determine which register is holding the closure to call
-		// FIXME handle call to upvalue
-		sourceReg := state.compile(n.Root, state.stackPtr)
 
 		// Any values returned from closures are stored at the calling stack
 		// frame's 0th register. The Dispatch/Move instruction pair calls a
