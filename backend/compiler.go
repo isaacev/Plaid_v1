@@ -305,8 +305,8 @@ func (state *assembly) compile(node frontend.Node, destReg RegisterAddress) Regi
 	case *frontend.ReturnStmt:
 		sourceReg := RegisterAddress(0)
 
-		if len(n.Arguments) > 0 {
-			sourceReg = state.compile(n.Arguments[0], state.stackPtr)
+		if n.Argument != nil {
+			sourceReg = state.compile(n.Argument, state.stackPtr)
 		}
 
 		state.currFunc.Bytecode.Write(Return{Source: sourceReg}.Generate())
