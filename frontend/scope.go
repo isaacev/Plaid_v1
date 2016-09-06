@@ -56,6 +56,14 @@ func (s *Scope) registerLocalVariable(name string, _type Type, def definition) {
 }
 
 func (s *Scope) registerUpvalue(name string) (upvalueOffset int) {
+	// Check if the upvalue has already been registered. If it has, return the
+	// lookup index of that registration
+	for i, upvalueName := range s.registeredUpvalues {
+		if upvalueName == name {
+			return i
+		}
+	}
+
 	s.upvalues[name] = &UpvalueRecord{Name: name}
 	upvalueOffset = len(s.registeredUpvalues)
 	s.registeredUpvalues = append(s.registeredUpvalues, name)
