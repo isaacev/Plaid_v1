@@ -10,7 +10,7 @@ import (
 // node (which is assumed to be semantically correct) and returns both a
 // `FuncPrototype` for the top-level main function and a slice of all other
 // function prototypes defined within the AST at any level
-func Compile(prog *frontend.Program) (mainFunc *FuncPrototype, funcs []*FuncPrototype) {
+func Compile(prog *frontend.ProgramNode) (mainFunc *FuncPrototype, funcs []*FuncPrototype) {
 	state := assembly{
 		currFunc:     &FuncPrototype{Bytecode: &Bytecode{}},
 		childFuncs:   make([]*FuncPrototype, 0),
