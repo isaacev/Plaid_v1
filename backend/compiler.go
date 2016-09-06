@@ -199,8 +199,6 @@ func (state *assembly) compile(node frontend.Node, destReg RegisterAddress) Regi
 		} else {
 			return state.lookupLocalRegister(n.Name)
 		}
-	case *frontend.TypeAnnotationStmt:
-		// TODO
 	case *frontend.BinaryExpr:
 		leftReg := state.compile(n.Left, state.stackPtr)
 		rightReg := state.compile(n.Right, state.stackPtr)
