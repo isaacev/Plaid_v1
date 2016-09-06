@@ -228,6 +228,42 @@ func (d *DispatchExpr) End() source.Pos {
 func (*DispatchExpr) exprNode() {}
 func (*DispatchExpr) stmtNode() {}
 
+// IndexAccessExpr represents an expression to extract an element from some list
+// at a particular index
+type IndexAccessExpr struct {
+	Root         Expr
+	LeftBracket  Token
+	Index        Expr
+	RightBracket Token
+	_type        Type
+}
+
+// SetType populates the `_type` field of this expression (this is done during
+// the type-checking phase)
+func (i *IndexAccessExpr) SetType(_type Type) {
+	i._type = _type
+}
+
+// GetType returns the Type associated with this expression. This should never
+// be called before the expression has been type checked since it will return
+// `nil` in that case
+func (i *IndexAccessExpr) GetType() Type {
+	return i._type
+}
+
+// Pos returns the starting source code position of this node
+func (i *IndexAccessExpr) Pos() source.Pos {
+	return i.Root.Pos()
+}
+
+// End returns the terminal source code position of this node
+func (i *IndexAccessExpr) End() source.Pos {
+	return i.RightBracket.Span.End
+}
+
+func (*IndexAccessExpr) exprNode() {}
+func (*IndexAccessExpr) stmtNode() {}
+
 // BinaryExpr represents a basic expression of the form:
 // <left expr> <operator> <right expr>
 type BinaryExpr struct {

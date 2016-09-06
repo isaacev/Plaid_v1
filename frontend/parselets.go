@@ -142,6 +142,46 @@ func binaryInfixParselet(precedence int) binaryParselet {
 	}
 }
 
+func indexAccessParselet(p *Parser, leftBracket Token, left Node) (expr Node, msg feedback.Message) {
+	indexAccess := &IndexAccessExpr{
+		LeftBracket: leftBracket,
+	}
+	var ok bool
+
+	// Ensure that the left-hand side is an expression
+	if indexAccess.Root, ok = left.(Expr); ok == false {
+		return nil, feedback.Error{
+			Classification: feedback.IllegalStatementError,
+			File:           p.Lexer.Scanner.File,
+			What: feedback.Selection{
+				Description: "expected left-hand side to be an expression",
+				Span:        source.Span{left.Pos(), left.End()},
+			},
+		}
+	}
+
+	if node, msg := p.parseExpression(0); msg != nil {
+		return nil, msg
+	} else {
+		if indexAccess.Index, ok = node.(Expr); ok == false {
+			return nil, feedback.Error{
+				Classification: feedback.IllegalStatementError,
+				File:           p.Lexer.Scanner.File,
+				What: feedback.Selection{
+					Description: "expected index to be an expression",
+					Span:        source.Span{node.Pos(), node.End()},
+				},
+			}
+		}
+	}
+
+	if indexAccess.RightBracket, msg = p.Lexer.ExpectNext(RBracketSymbol); msg != nil {
+		return nil, msg
+	}
+
+	return indexAccess, nil
+}
+
 func letDeclarationParselet(p *Parser, letKeyword Token) (expr Node, msg feedback.Message) {
 	var name *IdentExpr
 	var assignment Expr

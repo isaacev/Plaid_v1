@@ -118,6 +118,11 @@ func stringifyNode(generic Node) string {
 			stringifyType(node),
 			stringifyNode(node.Root),
 			args)
+	case *IndexAccessExpr:
+		return fmt.Sprintf("[%s %s at %s]",
+			stringifyType(node),
+			stringifyNode(node.Root),
+			stringifyNode(node.Index))
 	case *BinaryExpr:
 		return fmt.Sprintf("[%s (%s %s %s)]",
 			stringifyType(node),

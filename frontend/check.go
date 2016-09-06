@@ -48,6 +48,8 @@ func checkExpr(scope *Scope, expr Expr) (msgs []feedback.Message) {
 	switch e := expr.(type) {
 	case *DispatchExpr:
 		return checkDispatchExpr(scope, e)
+	case *IndexAccessExpr:
+		return checkIndexAccessExpr(scope, e)
 	case *BinaryExpr:
 		return checkBinaryExpr(scope, e)
 	case *IdentExpr:
@@ -408,6 +410,57 @@ func checkDispatchExpr(scope *Scope, expr *DispatchExpr) (msgs []feedback.Messag
 						totalExpectedArgs,
 						totalGivenArgs),
 					Span: source.Span{expr.LeftParen.Span.Start, expr.RightParen.Span.End},
+				},
+			})
+		}
+	}
+
+	return msgs
+}
+
+func checkIndexAccessExpr(scope *Scope, expr *IndexAccessExpr) (msgs []feedback.Message) {
+	// Type check the expression's root (which should produce some list that
+	// can be indexed)
+	msgs = append(msgs, checkExpr(scope, expr.Root)...)
+
+	// Make sure the root's type is indexable
+	if rootType, ok := expr.Root.GetType().(*ListType); ok == false {
+		// Ignore roots that have type `Any` since those can't be type checked
+		if expr.Root.GetType().Equals(scope.types.builtin.Any) == false {
+			msgs = append(msgs, feedback.Error{
+				Classification: feedback.MismatchedTypeError,
+				File:           scope.File,
+				What: feedback.Selection{
+					Description: fmt.Sprintf("cannot take index of type `%s`",
+						expr.Root.GetType().String()),
+					Span: source.Span{expr.Root.Pos(), expr.Root.End()},
+				},
+			})
+		}
+
+		expr.SetType(scope.types.builtin.Any)
+	} else {
+		if rootType.elementType == nil {
+			expr.SetType(scope.types.builtin.Any)
+		} else {
+			expr.SetType(rootType.elementType)
+		}
+	}
+
+	// Type check the index expression
+	msgs = append(msgs, checkExpr(scope, expr.Index)...)
+
+	if expr.Index.GetType().CastsTo(scope.types.builtin.Int) == false {
+		// Ignore indexes that have type `Any` since those can't be type checked
+		if expr.Index.GetType().Equals(scope.types.builtin.Any) == false {
+			msgs = append(msgs, feedback.Error{
+				Classification: feedback.MismatchedTypeError,
+				File:           scope.File,
+				What: feedback.Selection{
+					Description: fmt.Sprintf("indices must have type `%s`, found type `%s`",
+						scope.types.builtin.Int,
+						expr.Index.GetType().String()),
+					Span: source.Span{expr.Index.Pos(), expr.Index.End()},
 				},
 			})
 		}

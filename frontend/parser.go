@@ -91,6 +91,9 @@ func NewParser(file *source.File) *Parser {
 	p.addBinaryParselet(TokenSymbol("*"), 60, binaryInfixParselet(60))
 	p.addBinaryParselet(TokenSymbol("/"), 60, binaryInfixParselet(60))
 
+	// List index access
+	p.addBinaryParselet(LBracketSymbol, 80, indexAccessParselet)
+
 	// All statements have a binding-power of 0
 	p.addUnaryParselet(TokenSymbol("let"), 0, letDeclarationParselet)
 	p.addUnaryParselet(TokenSymbol("return"), 0, returnStatementParselet)
