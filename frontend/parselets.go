@@ -468,8 +468,8 @@ func listParselet(p *Parser, lBracket Token) (expr Node, err feedback.Message) {
 	}
 
 	return &ListLiteral{
-		LeftBracket: lBracket,
-		Elements: elements,
+		LeftBracket:  lBracket,
+		Elements:     elements,
 		RightBracket: rBracket,
 	}, nil
 }
@@ -485,7 +485,7 @@ func funcBodyParselet(p *Parser) (body *FuncBody, msg feedback.Message) {
 		return nil, msg
 	}
 
-	if stmts, msg = p.parseStatementsUntil(func (tok Token) bool { return tok.Symbol == TokenSymbol("}") }); msg != nil {
+	if stmts, msg = p.parseStatementsUntil(func(tok Token) bool { return tok.Symbol == TokenSymbol("}") }); msg != nil {
 		return nil, msg
 	}
 
@@ -847,7 +847,7 @@ func ifStatementParselet(p *Parser, ifKeyword Token) (expr Node, msg feedback.Me
 func loopStatementParselet(p *Parser, loopKeyword Token) (expr Node, msg feedback.Message) {
 	clause := &Clause{
 		Keyword: loopKeyword,
-		Body: &ClauseBody{},
+		Body:    &ClauseBody{},
 	}
 
 	stmt := &LoopStmt{
@@ -876,7 +876,7 @@ func loopStatementParselet(p *Parser, loopKeyword Token) (expr Node, msg feedbac
 		return nil, msg
 	}
 
-	endBodyTest := func (tok Token) bool {
+	endBodyTest := func(tok Token) bool {
 		return tok.Symbol == TokenSymbol("end")
 	}
 

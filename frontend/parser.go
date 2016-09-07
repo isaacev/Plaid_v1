@@ -262,7 +262,7 @@ func (p *Parser) parseStatementsUntil(terminatorMatches func(Token) bool) (stmts
 
 // Parse produces an AST from a set of parselets, a grammar and a lexer
 func (p *Parser) Parse() (node *ProgramNode, msg feedback.Message) {
-	stmts, msg := p.parseStatementsUntil(func (tok Token) bool { return tok.Symbol == EOFSymbol })
+	stmts, msg := p.parseStatementsUntil(func(tok Token) bool { return tok.Symbol == EOFSymbol })
 
 	return &ProgramNode{
 		Statements: stmts,
