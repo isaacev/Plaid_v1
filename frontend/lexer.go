@@ -218,10 +218,12 @@ func (l *Lexer) lexWord() (tok Token, msg feedback.Message) {
 		break
 	}
 
-	// Determine whether the word classifies as a keyword recognized by the
-	// grammar. If it does, set the appropriate token symbol
+	// Determine whether the word classifies as a keyword or boolean literal
+	// recognized by the grammar. If it does, set the appropriate token symbol
 	if l.Grammar.isKeyword(lexeme) {
 		sym = TokenSymbol(lexeme)
+	} else if l.Grammar.isBoolean(lexeme) {
+		sym = BooleanSymbol
 	} else {
 		sym = IdentSymbol
 	}

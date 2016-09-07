@@ -65,6 +65,7 @@ func NewParser(file *source.File) *Parser {
 		unaryParselets:   make(map[TokenSymbol]unaryParselet),
 	}
 
+	p.addUnaryParselet(BooleanSymbol, 0, literalParselet)
 	p.addUnaryParselet(IntegerSymbol, 0, literalParselet)
 	p.addUnaryParselet(DecimalSymbol, 0, literalParselet)
 	p.addUnaryParselet(StringSymbol, 0, literalParselet)

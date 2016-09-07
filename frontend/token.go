@@ -29,6 +29,7 @@ const (
 	ColonSymbol    TokenSymbol = ":"
 	IdentSymbol    TokenSymbol = "Identifier"
 	IntegerSymbol  TokenSymbol = "Integer"
+	BooleanSymbol  TokenSymbol = "Boolean"
 	DecimalSymbol  TokenSymbol = "Decimal"
 	StringSymbol   TokenSymbol = "String"
 )

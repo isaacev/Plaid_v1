@@ -101,7 +101,7 @@ func stringifyNode(generic Node) string {
 			stringifyNode(node.Assignment))
 	case *AssignmentStmt:
 		return fmt.Sprintf("(set \"%s\" %s)",
-			stringifyNode(node.Assignee),
+			node.Assignee.Name,
 			stringifyNode(node.Assignment))
 	case *DispatchExpr:
 		var args string
@@ -155,6 +155,8 @@ func stringifyNode(generic Node) string {
 		return fmt.Sprintf("[%s %.2f]", stringifyType(node), node.Value)
 	case *StrLiteral:
 		return fmt.Sprintf("[%s `%s`]", stringifyType(node), node.Value)
+	case *BoolLiteral:
+		return fmt.Sprintf("[%s <%t>]", stringifyType(node), node.Value)
 	default:
 		return fmt.Sprintf("<Unknown %T>", node)
 	}

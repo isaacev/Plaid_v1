@@ -19,6 +19,12 @@ func literalParselet(p *Parser, tok Token) (expr Node, msg feedback.Message) {
 	const precisionBits int = 32
 
 	switch tok.Symbol {
+	case BooleanSymbol:
+		return &BoolLiteral{
+			Lexeme: tok.Lexeme,
+			Value:  tok.Lexeme == "true",
+			Start:  tok.Span.Start,
+		}, nil
 	case IntegerSymbol:
 		// FIXME: parse more than just integers and handle this error
 		tmpInt64, _ := strconv.ParseInt(tok.Lexeme, 10, precisionBits)

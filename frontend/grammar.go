@@ -64,6 +64,11 @@ func (g *Grammar) isKeyword(s string) (matches bool) {
 	return false
 }
 
+// isBoolean returns true if a given string is a Boolean literal
+func (g *Grammar) isBoolean(s string) (matches bool) {
+	return s == "true" || s == "false"
+}
+
 // canInsertSemicolonAfter returns true if a given token can be the terminal token
 // in a statement or expression this includes:
 //   - Identifier
@@ -78,6 +83,7 @@ func (g *Grammar) canInsertSemicolonAfter(tok Token) (matches bool) {
 		tok.Symbol == IntegerSymbol ||
 		tok.Symbol == DecimalSymbol ||
 		tok.Symbol == StringSymbol ||
+		tok.Symbol == BooleanSymbol ||
 		(tok.Symbol == TokenSymbol("return")) ||
 		(tok.Symbol == TokenSymbol("end")) ||
 		(tok.Symbol == RBracketSymbol) ||
