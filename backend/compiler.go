@@ -210,7 +210,7 @@ func (state *assembly) compile(node frontend.Node, destReg RegisterAddress) Regi
 		leftReg := state.compile(n.Left, state.stackPtr)
 		rightReg := state.compile(n.Right, state.stackPtr)
 
-		switch n.GetType().String() {
+		switch n.Left.GetType().String() {
 		case "Int":
 			switch n.Operator {
 			case "<":
@@ -229,6 +229,8 @@ func (state *assembly) compile(node frontend.Node, destReg RegisterAddress) Regi
 				state.currFunc.Bytecode.Write(IntSub{Left: leftReg, Right: rightReg, Dest: destReg}.Generate())
 			case "*":
 				state.currFunc.Bytecode.Write(IntMul{Left: leftReg, Right: rightReg, Dest: destReg}.Generate())
+			case "/":
+				state.currFunc.Bytecode.Write(IntDiv{Left: leftReg, Right: rightReg, Dest: destReg}.Generate())
 			default:
 				panic(fmt.Sprintf("unknown operator: '%s'", string(n.Operator)))
 			}
@@ -250,6 +252,8 @@ func (state *assembly) compile(node frontend.Node, destReg RegisterAddress) Regi
 				state.currFunc.Bytecode.Write(DecSub{Left: leftReg, Right: rightReg, Dest: destReg}.Generate())
 			case "*":
 				state.currFunc.Bytecode.Write(DecMul{Left: leftReg, Right: rightReg, Dest: destReg}.Generate())
+			case "/":
+				state.currFunc.Bytecode.Write(DecDiv{Left: leftReg, Right: rightReg, Dest: destReg}.Generate())
 			default:
 				panic(fmt.Sprintf("unknown operator: '%s'", string(n.Operator)))
 			}

@@ -392,6 +392,22 @@ func (inst IntMul) Generate() (blob []byte) {
 	return blob
 }
 
+// IntDiv <left operand> <right operand> <destination register>
+type IntDiv struct {
+	Left  RegisterAddress
+	Right RegisterAddress
+	Dest  RegisterAddress
+}
+
+// Generate converts this instruction to raw bytes
+func (inst IntDiv) Generate() (blob []byte) {
+	blob = append(blob, OpcodeIntDiv)
+	blob = append(blob, registerToBytes(inst.Left)...)
+	blob = append(blob, registerToBytes(inst.Right)...)
+	blob = append(blob, registerToBytes(inst.Dest)...)
+	return blob
+}
+
 // DecAdd <left operand> <right operand> <destination register>
 type DecAdd struct {
 	Left  RegisterAddress
@@ -434,6 +450,22 @@ type DecMul struct {
 // Generate converts this instruction to raw bytes
 func (inst DecMul) Generate() (blob []byte) {
 	blob = append(blob, OpcodeDecMul)
+	blob = append(blob, registerToBytes(inst.Left)...)
+	blob = append(blob, registerToBytes(inst.Right)...)
+	blob = append(blob, registerToBytes(inst.Dest)...)
+	return blob
+}
+
+// DecDiv <left operand> <right operand> <destination register>
+type DecDiv struct {
+	Left  RegisterAddress
+	Right RegisterAddress
+	Dest  RegisterAddress
+}
+
+// Generate converts this instruction to raw bytes
+func (inst DecDiv) Generate() (blob []byte) {
+	blob = append(blob, OpcodeDecDiv)
 	blob = append(blob, registerToBytes(inst.Left)...)
 	blob = append(blob, registerToBytes(inst.Right)...)
 	blob = append(blob, registerToBytes(inst.Dest)...)

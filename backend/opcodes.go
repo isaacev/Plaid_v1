@@ -41,13 +41,13 @@ const (
 	OpcodeIntAdd uint8 = 0x50
 	OpcodeIntSub uint8 = 0x51
 	OpcodeIntMul uint8 = 0x52
-	// OpcodeIntDiv uint8 = 0x53
+	OpcodeIntDiv uint8 = 0x53
 
 	// Decimal arithmetic
 	OpcodeDecAdd uint8 = 0x54
 	OpcodeDecSub uint8 = 0x55
 	OpcodeDecMul uint8 = 0x56
-	// OpcodeDecDiv uint8 = 0x57
+	OpcodeDecDiv uint8 = 0x57
 
 	// Print statement
 	OpcodePrint uint8 = 0x90

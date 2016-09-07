@@ -98,6 +98,12 @@ func disassembleBytecode(fn *FuncPrototype, b *Bytecode) {
 			dest := bytesToUint32(b.Bytes[i+9], b.Bytes[i+10], b.Bytes[i+11], b.Bytes[i+12])
 			fmt.Printf("   %4d %-9s r%d, r%d, r%d\n", i, "IntMul", left, right, dest)
 			i += 13
+		case OpcodeIntDiv:
+			left := bytesToUint32(b.Bytes[i+1], b.Bytes[i+2], b.Bytes[i+3], b.Bytes[i+4])
+			right := bytesToUint32(b.Bytes[i+5], b.Bytes[i+6], b.Bytes[i+7], b.Bytes[i+8])
+			dest := bytesToUint32(b.Bytes[i+9], b.Bytes[i+10], b.Bytes[i+11], b.Bytes[i+12])
+			fmt.Printf("   %4d %-9s r%d, r%d, r%d\n", i, "IntDiv", left, right, dest)
+			i += 13
 		case OpcodeDecAdd:
 			left := bytesToUint32(b.Bytes[i+1], b.Bytes[i+2], b.Bytes[i+3], b.Bytes[i+4])
 			right := bytesToUint32(b.Bytes[i+5], b.Bytes[i+6], b.Bytes[i+7], b.Bytes[i+8])
@@ -115,6 +121,12 @@ func disassembleBytecode(fn *FuncPrototype, b *Bytecode) {
 			right := bytesToUint32(b.Bytes[i+5], b.Bytes[i+6], b.Bytes[i+7], b.Bytes[i+8])
 			dest := bytesToUint32(b.Bytes[i+9], b.Bytes[i+10], b.Bytes[i+11], b.Bytes[i+12])
 			fmt.Printf("   %4d %-9s r%d, r%d, r%d\n", i, "DecMul", left, right, dest)
+			i += 13
+		case OpcodeDecDiv:
+			left := bytesToUint32(b.Bytes[i+1], b.Bytes[i+2], b.Bytes[i+3], b.Bytes[i+4])
+			right := bytesToUint32(b.Bytes[i+5], b.Bytes[i+6], b.Bytes[i+7], b.Bytes[i+8])
+			dest := bytesToUint32(b.Bytes[i+9], b.Bytes[i+10], b.Bytes[i+11], b.Bytes[i+12])
+			fmt.Printf("   %4d %-9s r%d, r%d, r%d\n", i, "DecDiv", left, right, dest)
 			i += 13
 		case OpcodePrint:
 			source := bytesToUint32(b.Bytes[i+1], b.Bytes[i+2], b.Bytes[i+3], b.Bytes[i+4])

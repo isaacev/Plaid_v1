@@ -132,6 +132,8 @@ func (inter *Interpreter) Execute() {
 		case OpcodeIntSub:
 			fallthrough
 		case OpcodeIntMul:
+			fallthrough
+		case OpcodeIntDiv:
 			leftReg := inter.readRegister()
 			rightReg := inter.readRegister()
 			leftArg := inter.fp.Registers[leftReg]
@@ -159,28 +161,48 @@ func (inter *Interpreter) Execute() {
 				panic(fmt.Sprintf("expected `int32`, found `%T`", rightArg))
 			}
 
+			if inter.fp.Registers[dest] == nil {
+				inter.fp.Registers[dest] = &Register{}
+			}
+
 			// Actual math done here, once arguments have been cast
 			var result int32
 
 			switch opcode {
 			case OpcodeIntAdd:
+				// Compute the result
 				result = leftValue + rightValue
+
+				// Store the value in the appropriate register
+				inter.fp.Registers[dest].Value = result
 			case OpcodeIntSub:
+				// Compute the result
 				result = leftValue - rightValue
+
+				// Store the value in the appropriate register
+				inter.fp.Registers[dest].Value = result
 			case OpcodeIntMul:
+				// Compute the result
 				result = leftValue * rightValue
-			}
 
-			if inter.fp.Registers[dest] == nil {
-				inter.fp.Registers[dest] = &Register{}
-			}
+				// Store the value in the appropriate register
+				inter.fp.Registers[dest].Value = result
+			case OpcodeIntDiv:
+				// Compute the result
+				leftFloat32 := float32(leftValue)
+				rightFloat32 := float32(rightValue)
+				result := leftFloat32 / rightFloat32
 
-			inter.fp.Registers[dest].Value = result
+				// Store the value in the appropriate register
+				inter.fp.Registers[dest].Value = result
+			}
 		case OpcodeDecAdd:
 			fallthrough
 		case OpcodeDecSub:
 			fallthrough
 		case OpcodeDecMul:
+			fallthrough
+		case OpcodeDecDiv:
 			leftReg := inter.readRegister()
 			rightReg := inter.readRegister()
 			leftArg := inter.fp.Registers[leftReg]
@@ -218,6 +240,8 @@ func (inter *Interpreter) Execute() {
 				result = leftValue - rightValue
 			case OpcodeDecMul:
 				result = leftValue * rightValue
+			case OpcodeDecDiv:
+				result = leftValue / rightValue
 			}
 
 			if inter.fp.Registers[dest] == nil {
