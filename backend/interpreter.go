@@ -49,6 +49,10 @@ func (inter *Interpreter) Execute() {
 			value := inter.readInt32()
 			dest := inter.readRegister()
 			inter.fp.Registers[dest] = &Register{Value: value}
+		case OpcodeDecConst:
+			value := inter.readFloat32()
+			dest := inter.readRegister()
+			inter.fp.Registers[dest] = &Register{Value: value}
 		case OpcodeFuncConst:
 			id := inter.readUint32()
 			dest := inter.readRegister()
@@ -164,6 +168,55 @@ func (inter *Interpreter) Execute() {
 			case OpcodeIntSub:
 				result = leftValue - rightValue
 			case OpcodeIntMul:
+				result = leftValue * rightValue
+			}
+
+			if inter.fp.Registers[dest] == nil {
+				inter.fp.Registers[dest] = &Register{}
+			}
+
+			inter.fp.Registers[dest].Value = result
+		case OpcodeDecAdd:
+			fallthrough
+		case OpcodeDecSub:
+			fallthrough
+		case OpcodeDecMul:
+			leftReg := inter.readRegister()
+			rightReg := inter.readRegister()
+			leftArg := inter.fp.Registers[leftReg]
+			rightArg := inter.fp.Registers[rightReg]
+
+			// Register in which to store the product
+			dest := inter.readRegister()
+
+			var leftValue, rightValue float32
+			var ok bool
+
+			if leftArg == nil {
+				panic("expected `float32`, found <nil>")
+			}
+
+			if leftValue, ok = leftArg.Value.(float32); ok == false {
+				panic(fmt.Sprintf("expected `float32`, found `%T`", leftArg))
+			}
+
+			if rightArg == nil {
+				panic("expected `float32`, found <nil>")
+			}
+
+			if rightValue, ok = rightArg.Value.(float32); ok == false {
+				panic(fmt.Sprintf("expected `float32`, found `%T`", rightArg))
+			}
+
+			// Actual math done here, once arguments have been cast
+			var result float32
+
+			switch opcode {
+			case OpcodeDecAdd:
+				result = leftValue + rightValue
+			case OpcodeDecSub:
+				result = leftValue - rightValue
+			case OpcodeDecMul:
 				result = leftValue * rightValue
 			}
 

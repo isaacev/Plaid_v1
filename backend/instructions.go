@@ -231,6 +231,91 @@ func (inst IntEq) Generate() (blob []byte) {
 	return blob
 }
 
+// DecLT <left operand register> <right operand register> <destination register>
+//  - if left < right, load 1 into the destination register, else load 0
+type DecLT struct {
+	Left  RegisterAddress
+	Right RegisterAddress
+	Dest  RegisterAddress
+}
+
+// Generate converts this instruction to raw bytes
+func (inst DecLT) Generate() (blob []byte) {
+	blob = append(blob, OpcodeDecLT)
+	blob = append(blob, registerToBytes(inst.Left)...)
+	blob = append(blob, registerToBytes(inst.Right)...)
+	blob = append(blob, registerToBytes(inst.Dest)...)
+	return blob
+}
+
+// DecLTEq <left operand register> <right operand register> <destination register>
+//  - if left <= right, load 1 into the destination register, else load 0
+type DecLTEq struct {
+	Left  RegisterAddress
+	Right RegisterAddress
+	Dest  RegisterAddress
+}
+
+// Generate converts this instruction to raw bytes
+func (inst DecLTEq) Generate() (blob []byte) {
+	blob = append(blob, OpcodeDecLTEq)
+	blob = append(blob, registerToBytes(inst.Left)...)
+	blob = append(blob, registerToBytes(inst.Right)...)
+	blob = append(blob, registerToBytes(inst.Dest)...)
+	return blob
+}
+
+// DecGT <left operand register> <right operand register> <destination register>
+//  - if left > right, load 1 into the destination register, else load 0
+type DecGT struct {
+	Left  RegisterAddress
+	Right RegisterAddress
+	Dest  RegisterAddress
+}
+
+// Generate converts this instruction to raw bytes
+func (inst DecGT) Generate() (blob []byte) {
+	blob = append(blob, OpcodeDecGT)
+	blob = append(blob, registerToBytes(inst.Left)...)
+	blob = append(blob, registerToBytes(inst.Right)...)
+	blob = append(blob, registerToBytes(inst.Dest)...)
+	return blob
+}
+
+// DecGTEq <left operand register> <right operand register> <destination register>
+//  - if left >= right, load 1 into the destination register, else load 0
+type DecGTEq struct {
+	Left  RegisterAddress
+	Right RegisterAddress
+	Dest  RegisterAddress
+}
+
+// Generate converts this instruction to raw bytes
+func (inst DecGTEq) Generate() (blob []byte) {
+	blob = append(blob, OpcodeDecGTEq)
+	blob = append(blob, registerToBytes(inst.Left)...)
+	blob = append(blob, registerToBytes(inst.Right)...)
+	blob = append(blob, registerToBytes(inst.Dest)...)
+	return blob
+}
+
+// DecEq <left operand register> <right operand register> <destination register>
+//  - if left == right, load 1 into the destination register, else load 0
+type DecEq struct {
+	Left  RegisterAddress
+	Right RegisterAddress
+	Dest  RegisterAddress
+}
+
+// Generate converts this instruction to raw bytes
+func (inst DecEq) Generate() (blob []byte) {
+	blob = append(blob, OpcodeDecEq)
+	blob = append(blob, registerToBytes(inst.Left)...)
+	blob = append(blob, registerToBytes(inst.Right)...)
+	blob = append(blob, registerToBytes(inst.Dest)...)
+	return blob
+}
+
 // Dispatch <source register storing closure> <register with first argument>
 //  - after the first argument register, any other arguments are assumed to be
 //    sequential in the register array
@@ -301,6 +386,54 @@ type IntMul struct {
 // Generate converts this instruction to raw bytes
 func (inst IntMul) Generate() (blob []byte) {
 	blob = append(blob, OpcodeIntMul)
+	blob = append(blob, registerToBytes(inst.Left)...)
+	blob = append(blob, registerToBytes(inst.Right)...)
+	blob = append(blob, registerToBytes(inst.Dest)...)
+	return blob
+}
+
+// DecAdd <left operand> <right operand> <destination register>
+type DecAdd struct {
+	Left  RegisterAddress
+	Right RegisterAddress
+	Dest  RegisterAddress
+}
+
+// Generate converts this instruction to raw bytes
+func (inst DecAdd) Generate() (blob []byte) {
+	blob = append(blob, OpcodeDecAdd)
+	blob = append(blob, registerToBytes(inst.Left)...)
+	blob = append(blob, registerToBytes(inst.Right)...)
+	blob = append(blob, registerToBytes(inst.Dest)...)
+	return blob
+}
+
+// DecSub <left operand> <right operand> <destination register>
+type DecSub struct {
+	Left  RegisterAddress
+	Right RegisterAddress
+	Dest  RegisterAddress
+}
+
+// Generate converts this instruction to raw bytes
+func (inst DecSub) Generate() (blob []byte) {
+	blob = append(blob, OpcodeDecSub)
+	blob = append(blob, registerToBytes(inst.Left)...)
+	blob = append(blob, registerToBytes(inst.Right)...)
+	blob = append(blob, registerToBytes(inst.Dest)...)
+	return blob
+}
+
+// DecMul <left operand> <right operand> <destination register>
+type DecMul struct {
+	Left  RegisterAddress
+	Right RegisterAddress
+	Dest  RegisterAddress
+}
+
+// Generate converts this instruction to raw bytes
+func (inst DecMul) Generate() (blob []byte) {
+	blob = append(blob, OpcodeDecMul)
 	blob = append(blob, registerToBytes(inst.Left)...)
 	blob = append(blob, registerToBytes(inst.Right)...)
 	blob = append(blob, registerToBytes(inst.Dest)...)

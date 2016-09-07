@@ -27,11 +27,11 @@ const (
 	OpcodeIntEq   uint8 = 0x34
 
 	// Decimal comparison
-	// OpcodeDecLT   uint8 = 0x35
-	// OpcodeDecLTEq uint8 = 0x36
-	// OpcodeDecGT   uint8 = 0x37
-	// OpcodeDecGTEq uint8 = 0x38
-	// OpcodeDecEq   uint8 = 0x39
+	OpcodeDecLT   uint8 = 0x35
+	OpcodeDecLTEq uint8 = 0x36
+	OpcodeDecGT   uint8 = 0x37
+	OpcodeDecGTEq uint8 = 0x38
+	OpcodeDecEq   uint8 = 0x39
 
 	// Function calling and returning
 	OpcodeDispatch uint8 = 0x40
@@ -44,9 +44,9 @@ const (
 	// OpcodeIntDiv uint8 = 0x53
 
 	// Decimal arithmetic
-	// OpcodeDecAdd uint8 = 0x54
-	// OpcodeDecSub uint8 = 0x55
-	// OpcodeDecMul uint8 = 0x56
+	OpcodeDecAdd uint8 = 0x54
+	OpcodeDecSub uint8 = 0x55
+	OpcodeDecMul uint8 = 0x56
 	// OpcodeDecDiv uint8 = 0x57
 
 	// Print statement

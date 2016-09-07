@@ -181,6 +181,13 @@ func (state *assembly) compile(node frontend.Node, destReg RegisterAddress) Regi
 		if state.isRegisterOnStack(destReg) {
 			state.stackPtr++
 		}
+	case *frontend.DecLiteral:
+		state.currFunc.Bytecode.Write(DecConst{Value: n.Value, Dest: destReg}.Generate())
+
+		// increment the stackPtr if the decimal constant wasn't stored in a reserved register
+		if state.isRegisterOnStack(destReg) {
+			state.stackPtr++
+		}
 	case *frontend.FuncLiteral:
 		constantIndex := state.compileFunction(n)
 		state.currFunc.Bytecode.Write(FuncConst{ConstantIndex: constantIndex, Dest: destReg}.Generate())
@@ -203,25 +210,49 @@ func (state *assembly) compile(node frontend.Node, destReg RegisterAddress) Regi
 		leftReg := state.compile(n.Left, state.stackPtr)
 		rightReg := state.compile(n.Right, state.stackPtr)
 
-		switch n.Operator {
-		case "<":
-			state.currFunc.Bytecode.Write(IntLT{Left: leftReg, Right: rightReg, Dest: destReg}.Generate())
-		case "<=":
-			state.currFunc.Bytecode.Write(IntLTEq{Left: leftReg, Right: rightReg, Dest: destReg}.Generate())
-		case ">":
-			state.currFunc.Bytecode.Write(IntGT{Left: leftReg, Right: rightReg, Dest: destReg}.Generate())
-		case ">=":
-			state.currFunc.Bytecode.Write(IntGTEq{Left: leftReg, Right: rightReg, Dest: destReg}.Generate())
-		case "==":
-			state.currFunc.Bytecode.Write(IntEq{Left: leftReg, Right: rightReg, Dest: destReg}.Generate())
-		case "+":
-			state.currFunc.Bytecode.Write(IntAdd{Left: leftReg, Right: rightReg, Dest: destReg}.Generate())
-		case "-":
-			state.currFunc.Bytecode.Write(IntSub{Left: leftReg, Right: rightReg, Dest: destReg}.Generate())
-		case "*":
-			state.currFunc.Bytecode.Write(IntMul{Left: leftReg, Right: rightReg, Dest: destReg}.Generate())
-		default:
-			panic(fmt.Sprintf("unknown operator: '%s'", string(n.Operator)))
+		switch n.GetType().String() {
+		case "Int":
+			switch n.Operator {
+			case "<":
+				state.currFunc.Bytecode.Write(IntLT{Left: leftReg, Right: rightReg, Dest: destReg}.Generate())
+			case "<=":
+				state.currFunc.Bytecode.Write(IntLTEq{Left: leftReg, Right: rightReg, Dest: destReg}.Generate())
+			case ">":
+				state.currFunc.Bytecode.Write(IntGT{Left: leftReg, Right: rightReg, Dest: destReg}.Generate())
+			case ">=":
+				state.currFunc.Bytecode.Write(IntGTEq{Left: leftReg, Right: rightReg, Dest: destReg}.Generate())
+			case "==":
+				state.currFunc.Bytecode.Write(IntEq{Left: leftReg, Right: rightReg, Dest: destReg}.Generate())
+			case "+":
+				state.currFunc.Bytecode.Write(IntAdd{Left: leftReg, Right: rightReg, Dest: destReg}.Generate())
+			case "-":
+				state.currFunc.Bytecode.Write(IntSub{Left: leftReg, Right: rightReg, Dest: destReg}.Generate())
+			case "*":
+				state.currFunc.Bytecode.Write(IntMul{Left: leftReg, Right: rightReg, Dest: destReg}.Generate())
+			default:
+				panic(fmt.Sprintf("unknown operator: '%s'", string(n.Operator)))
+			}
+		case "Dec":
+			switch n.Operator {
+			case "<":
+				state.currFunc.Bytecode.Write(DecLT{Left: leftReg, Right: rightReg, Dest: destReg}.Generate())
+			case "<=":
+				state.currFunc.Bytecode.Write(DecLTEq{Left: leftReg, Right: rightReg, Dest: destReg}.Generate())
+			case ">":
+				state.currFunc.Bytecode.Write(DecGT{Left: leftReg, Right: rightReg, Dest: destReg}.Generate())
+			case ">=":
+				state.currFunc.Bytecode.Write(DecGTEq{Left: leftReg, Right: rightReg, Dest: destReg}.Generate())
+			case "==":
+				state.currFunc.Bytecode.Write(DecEq{Left: leftReg, Right: rightReg, Dest: destReg}.Generate())
+			case "+":
+				state.currFunc.Bytecode.Write(DecAdd{Left: leftReg, Right: rightReg, Dest: destReg}.Generate())
+			case "-":
+				state.currFunc.Bytecode.Write(DecSub{Left: leftReg, Right: rightReg, Dest: destReg}.Generate())
+			case "*":
+				state.currFunc.Bytecode.Write(DecMul{Left: leftReg, Right: rightReg, Dest: destReg}.Generate())
+			default:
+				panic(fmt.Sprintf("unknown operator: '%s'", string(n.Operator)))
+			}
 		}
 
 		if state.isRegisterOnStack(leftReg) {
