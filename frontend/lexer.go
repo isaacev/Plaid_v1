@@ -294,6 +294,41 @@ func (l *Lexer) lexNumber() (tok Token, msg feedback.Message) {
 			continue
 		}
 
+		if peek == '_' {
+			// Consume the upcoming underscore and DON'T append it to the lexeme
+			r, pos, eol, l.eof = l.Scanner.Next()
+			span.End = pos
+			peek, _, _, _ = l.Scanner.Peek()
+
+			if l.Grammar.isNumeric(peek) {
+				continue
+			} else {
+				if peek == '_' {
+					_, peekPos, _, _ := l.Scanner.Peek()
+
+					msg = feedback.Error{
+						Classification: feedback.SyntaxError,
+						File:           l.Scanner.File,
+						What: feedback.Selection{
+							Description: "Illegal double underscore in number literal",
+							Span:        source.Span{pos, peekPos},
+						},
+					}
+				} else {
+					msg = feedback.Error{
+						Classification: feedback.SyntaxError,
+						File:           l.Scanner.File,
+						What: feedback.Selection{
+							Description: "Unexpected end of number literal",
+							Span:        source.Span{pos, pos},
+						},
+					}
+				}
+
+				return Token{sym, lexeme, span}, msg
+			}
+		}
+
 		// Continue lexing if the upcoming rune is a decimal point
 		if peek == '.' {
 			continue
