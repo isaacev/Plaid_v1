@@ -227,6 +227,14 @@ func (state *assembly) compile(node frontend.Node, destReg RegisterAddress) Regi
 		if state.isRegisterOnStack(destReg) {
 			state.stackPtr++
 		}
+	case *frontend.StrLiteral:
+		constantIndex := state.registerConstant(n.Value)
+		state.currFunc.Bytecode.Write(StrConst{ConstantIndex: constantIndex, Dest: destReg}.Generate())
+
+		// increment the stackPtr if the decimal constant wasn't stored in a reserved register
+		if state.isRegisterOnStack(destReg) {
+			state.stackPtr++
+		}
 	case *frontend.FuncLiteral:
 		constantIndex := state.compileFunction(n)
 		state.currFunc.Bytecode.Write(FuncConst{ConstantIndex: constantIndex, Dest: destReg}.Generate())

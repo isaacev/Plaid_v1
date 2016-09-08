@@ -63,6 +63,20 @@ func (inst DecConst) Generate() (blob []byte) {
 	return blob
 }
 
+// StrConst <constant pool index> <destination register>
+type StrConst struct {
+	ConstantIndex uint32
+	Dest          RegisterAddress
+}
+
+// Generate converts this instruction to raw bytes
+func (inst StrConst) Generate() (blob []byte) {
+	blob = append(blob, OpcodeStrConst)
+	blob = append(blob, uint32ToBytes(inst.ConstantIndex)...)
+	blob = append(blob, registerToBytes(inst.Dest)...)
+	return blob
+}
+
 // FuncConst <function pool index> <destination register>
 type FuncConst struct {
 	ConstantIndex uint32

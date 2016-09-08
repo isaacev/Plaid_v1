@@ -57,6 +57,11 @@ func (inter *Interpreter) Execute() {
 			value := inter.readFloat32()
 			dest := inter.readRegister()
 			inter.fp.Registers[dest] = &Register{Value: value}
+		case OpcodeStrConst:
+			index := inter.readUint32()
+			dest := inter.readRegister()
+			value := inter.fp.Closure.Prototype.Constants[index]
+			inter.fp.Registers[dest] = &Register{Value: value}
 		case OpcodeFuncConst:
 			id := inter.readUint32()
 			dest := inter.readRegister()
