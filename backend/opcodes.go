@@ -30,6 +30,7 @@ const (
 	OpcodeIntSub  uint8 = 0x76
 	OpcodeIntMul  uint8 = 0x77
 	OpcodeIntDiv  uint8 = 0x78
+	OpcodeIntNeg  uint8 = 0x79
 
 	// Decimal manipulation (0x80...0x8F)
 	OpcodeDecLT   uint8 = 0x80
@@ -41,4 +42,5 @@ const (
 	OpcodeDecSub  uint8 = 0x86
 	OpcodeDecMul  uint8 = 0x87
 	OpcodeDecDiv  uint8 = 0x88
+	OpcodeDecNeg  uint8 = 0x89
 )

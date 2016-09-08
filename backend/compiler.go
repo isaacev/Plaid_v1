@@ -239,6 +239,33 @@ func (state *assembly) compile(node frontend.Node, destReg RegisterAddress) Regi
 		} else {
 			return state.lookupLocalRegister(n.Name)
 		}
+	case *frontend.UnaryExpr:
+		operandReg := state.compile(n.Operand, state.stackPtr)
+
+		switch n.Operand.GetType().String() {
+		case "Int":
+			switch n.Operator.Symbol {
+			case "-":
+				state.currFunc.Bytecode.Write(IntNeg{Operand: operandReg, Dest: destReg}.Generate())
+			default:
+				panic(fmt.Sprintf("unknown operator: '%s'", string(n.Operator.Symbol)))
+			}
+		case "Dec":
+			switch n.Operator.Symbol {
+			case "-":
+				state.currFunc.Bytecode.Write(DecNeg{Operand: operandReg, Dest: destReg}.Generate())
+			default:
+				panic(fmt.Sprintf("unknown operator: '%s'", string(n.Operator.Symbol)))
+			}
+		}
+
+		if state.isRegisterOnStack(operandReg) {
+			state.stackPtr--
+		}
+
+		if state.isRegisterOnStack(destReg) {
+			state.stackPtr++
+		}
 	case *frontend.BinaryExpr:
 		leftReg := state.compile(n.Left, state.stackPtr)
 		rightReg := state.compile(n.Right, state.stackPtr)

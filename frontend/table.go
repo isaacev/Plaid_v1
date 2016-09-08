@@ -57,7 +57,8 @@ func newTypeTable() *typeTable {
 
 	// Dec arithmetic and comparison methods
 	d.AddMethod(&Method{"+", d, d, d})
-	d.AddMethod(&Method{"-", d, d, d})
+	d.AddMethod(&Method{"-", d, d, d})   // binary addition
+	d.AddMethod(&Method{"-", d, nil, d}) // unary negation
 	d.AddMethod(&Method{"*", d, d, d})
 	d.AddMethod(&Method{"/", d, d, d})
 	d.AddMethod(&Method{"<", d, d, b})
@@ -68,7 +69,8 @@ func newTypeTable() *typeTable {
 
 	// Int arithmetic and comparison methods
 	i.AddMethod(&Method{"+", i, i, i})
-	i.AddMethod(&Method{"-", i, i, i})
+	i.AddMethod(&Method{"-", i, i, i})   // binary addition
+	i.AddMethod(&Method{"-", i, nil, i}) // unary negation
 	i.AddMethod(&Method{"*", i, i, i})
 	i.AddMethod(&Method{"/", i, i, d})
 	i.AddMethod(&Method{"<", i, i, b})

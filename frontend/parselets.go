@@ -102,6 +102,35 @@ func groupParselet(p *Parser, leftParen Token) (expr Node, err feedback.Message)
 	return inner, nil
 }
 
+func unaryPrefixParselet(precedence int) unaryParselet {
+	return func(p *Parser, tok Token) (expr Node, msg feedback.Message) {
+		var operandExpr Expr
+
+		if operandNode, msg := p.parseExpression(precedence); msg != nil {
+			return nil, msg
+		} else {
+			var ok bool
+
+			if operandExpr, ok = operandNode.(Expr); ok == false {
+				return nil, feedback.Error{
+					Classification: feedback.IllegalStatementError,
+					File: p.Lexer.Scanner.File,
+					What: feedback.Selection{
+						Description: fmt.Sprintf("expected operand to be expression, not `%T`",
+							operandNode),
+						Span: source.Span{operandNode.Pos(), operandNode.End()},
+					},
+				}
+			}
+		}
+
+		return &UnaryExpr{
+			Operator: tok,
+			Operand:  operandExpr,
+		}, nil
+	}
+}
+
 func binaryInfixParselet(precedence int) binaryParselet {
 	return func(p *Parser, tok Token, left Node) (expr Node, msg feedback.Message) {
 		var right Node

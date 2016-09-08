@@ -242,6 +242,41 @@ func (inter *Interpreter) Execute() {
 
 			// Store the value in the appropriate register
 			inter.fp.Registers[dest].Value = result
+		case OpcodeIntNeg:
+			operandReg := inter.readRegister()
+			operand := inter.fp.Registers[operandReg]
+
+			// Register in which to store the product
+			dest := inter.readRegister()
+
+			var operandValue int32
+			var ok bool
+
+			if operand == nil {
+				panic("expected `int32`, found <nil>")
+			}
+
+			if operandValue, ok = operand.Value.(int32); ok == false {
+				panic(fmt.Sprintf("expected `int32`, found `%T`", operand))
+			}
+
+			// Populate the register slot with an empty Register struct if the
+			// slot is only `nil`
+			if inter.fp.Registers[dest] == nil {
+				inter.fp.Registers[dest] = &Register{}
+			}
+
+			// Actual math done here, once arguments have been cast
+			var result interface{}
+
+			switch opcode {
+			case OpcodeIntNeg:
+				// Compute the result
+				result = -1 * operandValue
+			}
+
+			// Store the value in the appropriate register
+			inter.fp.Registers[dest].Value = result
 		case OpcodeDecAdd:
 			fallthrough
 		case OpcodeDecSub:

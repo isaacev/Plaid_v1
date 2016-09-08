@@ -123,6 +123,11 @@ func stringifyNode(generic Node) string {
 			stringifyType(node),
 			stringifyNode(node.Root),
 			stringifyNode(node.Index))
+	case *UnaryExpr:
+		return fmt.Sprintf("[%s (%s %s)]",
+			stringifyType(node),
+			string(node.Operator.Symbol),
+			stringifyNode(node.Operand))
 	case *BinaryExpr:
 		return fmt.Sprintf("[%s (%s %s %s)]",
 			stringifyType(node),

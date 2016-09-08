@@ -91,6 +91,7 @@ func NewParser(file *source.File) *Parser {
 	p.addBinaryParselet(TokenSymbol("-"), 50, binaryInfixParselet(50))
 	p.addBinaryParselet(TokenSymbol("*"), 60, binaryInfixParselet(60))
 	p.addBinaryParselet(TokenSymbol("/"), 60, binaryInfixParselet(60))
+	p.addUnaryParselet(TokenSymbol("-"), 70, unaryPrefixParselet(70))
 
 	// List index access
 	p.addBinaryParselet(LBracketSymbol, 80, indexAccessParselet)

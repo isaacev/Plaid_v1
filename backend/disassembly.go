@@ -131,6 +131,11 @@ func disassembleBytecode(fn *FuncPrototype, b *Bytecode) {
 			dest := bytesToUint32(b.Bytes[i+9], b.Bytes[i+10], b.Bytes[i+11], b.Bytes[i+12])
 			fmt.Printf("   %4d %-9s r%d, r%d, r%d\n", i, "IntDiv", left, right, dest)
 			i += 13
+		case OpcodeIntNeg:
+			operand := bytesToUint32(b.Bytes[i+1], b.Bytes[i+2], b.Bytes[i+3], b.Bytes[i+4])
+			dest := bytesToUint32(b.Bytes[i+5], b.Bytes[i+6], b.Bytes[i+7], b.Bytes[i+8])
+			fmt.Printf("   %4d %-9s r%d, r%d\n", i, "IntNeg", operand, dest)
+			i += 9
 		case OpcodeDecAdd:
 			left := bytesToUint32(b.Bytes[i+1], b.Bytes[i+2], b.Bytes[i+3], b.Bytes[i+4])
 			right := bytesToUint32(b.Bytes[i+5], b.Bytes[i+6], b.Bytes[i+7], b.Bytes[i+8])

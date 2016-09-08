@@ -431,6 +431,20 @@ func (inst IntDiv) Generate() (blob []byte) {
 	return blob
 }
 
+// IntNeg <operand> <destination register>
+type IntNeg struct {
+	Operand RegisterAddress
+	Dest    RegisterAddress
+}
+
+// Generate converts this instruction to raw bytes
+func (inst IntNeg) Generate() (blob []byte) {
+	blob = append(blob, OpcodeIntNeg)
+	blob = append(blob, registerToBytes(inst.Operand)...)
+	blob = append(blob, registerToBytes(inst.Dest)...)
+	return blob
+}
+
 // DecAdd <left operand> <right operand> <destination register>
 type DecAdd struct {
 	Left  RegisterAddress
@@ -484,6 +498,20 @@ type DecDiv struct {
 	Left  RegisterAddress
 	Right RegisterAddress
 	Dest  RegisterAddress
+}
+
+// DecNeg <operand> <destination register>
+type DecNeg struct {
+	Operand RegisterAddress
+	Dest    RegisterAddress
+}
+
+// Generate converts this instruction to raw bytes
+func (inst DecNeg) Generate() (blob []byte) {
+	blob = append(blob, OpcodeDecNeg)
+	blob = append(blob, registerToBytes(inst.Operand)...)
+	blob = append(blob, registerToBytes(inst.Dest)...)
+	return blob
 }
 
 // Generate converts this instruction to raw bytes

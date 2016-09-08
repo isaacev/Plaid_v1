@@ -50,6 +50,8 @@ func checkExpr(scope *Scope, expr Expr) (msgs []feedback.Message) {
 		return checkDispatchExpr(scope, e)
 	case *IndexAccessExpr:
 		return checkIndexAccessExpr(scope, e)
+	case *UnaryExpr:
+		return checkUnaryExpr(scope, e)
 	case *BinaryExpr:
 		return checkBinaryExpr(scope, e)
 	case *IdentExpr:
@@ -464,6 +466,39 @@ func checkIndexAccessExpr(scope *Scope, expr *IndexAccessExpr) (msgs []feedback.
 				},
 			})
 		}
+	}
+
+	return msgs
+}
+
+func checkUnaryExpr(scope *Scope, expr *UnaryExpr) (msgs []feedback.Message) {
+	// By default set the expression's type to `Any`. This will likely be
+	// overwritten but prevents it from becoming `nil`
+	expr.SetType(scope.types.builtin.Any)
+
+	// Store the operator string in a variable for easy access
+	op := string(expr.Operator.Symbol)
+
+	// Type check the operand
+	msgs = append(msgs, checkExpr(scope, expr.Operand)...)
+	typeOperand := expr.Operand.GetType()
+
+	if exists, resultType := typeOperand.HasMethod(op, nil); exists {
+		expr.SetType(resultType)
+	} else {
+		// The operand's type has no method defined for the given unary operation
+		msgs = append(msgs, feedback.Error{
+			Classification: feedback.MismatchedTypeError,
+			File:           scope.File,
+			What: feedback.Selection{
+				Description: fmt.Sprintf("type `%s` cannot call `%s`",
+					typeOperand.String(),
+					op),
+				Span: source.Span{expr.Pos(), expr.End()},
+			},
+		})
+
+		expr.SetType(typeOperand)
 	}
 
 	return msgs

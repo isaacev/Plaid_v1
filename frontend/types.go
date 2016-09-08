@@ -50,6 +50,12 @@ func (any *AnyType) AddMethod(method *Method) {
 
 func (any *AnyType) HasMethod(operator string, operand Type) (exists bool, returnType Type) {
 	for _, method := range any.methods {
+		// Handle unary methods with a `nil` operand
+		if method.operator == operator && (method.operand == nil) && (operand == nil) {
+			return true, method.result
+		}
+
+		// Handle binary methods with a well defined operand
 		if method.operator == operator && method.operand.Equals(operand) {
 			return true, method.result
 		}
@@ -134,6 +140,12 @@ func (op *TypeOperator) AddMethod(method *Method) {
 
 func (op TypeOperator) HasMethod(operator string, operand Type) (exists bool, returnType Type) {
 	for _, method := range op.methods {
+		// Handle unary methods with a `nil` operand
+		if method.operator == operator && (method.operand == nil) && (operand == nil) {
+			return true, method.result
+		}
+
+		// Handle binary methods with a well defined operand
 		if method.operator == operator && method.operand.Equals(operand) {
 			return true, method.result
 		}
@@ -240,6 +252,12 @@ func (fn *FuncType) AddMethod(method *Method) {
 
 func (fn FuncType) HasMethod(operator string, operand Type) (exists bool, returnType Type) {
 	for _, method := range fn.methods {
+		// Handle unary methods with a `nil` operand
+		if method.operator == operator && (method.operand == nil) && (operand == nil) {
+			return true, method.result
+		}
+
+		// Handle binary methods with a well defined operand
 		if method.operator == operator && method.operand.Equals(operand) {
 			return true, method.result
 		}
@@ -292,6 +310,12 @@ func (lt *ListType) AddMethod(method *Method) {
 
 func (lt *ListType) HasMethod(operator string, operand Type) (exists bool, returnType Type) {
 	for _, method := range lt.methods {
+		// Handle unary methods with a `nil` operand
+		if method.operator == operator && (method.operand == nil) && (operand == nil) {
+			return true, method.result
+		}
+
+		// Handle binary methods with a well defined operand
 		if method.operator == operator && method.operand.Equals(operand) {
 			return true, method.result
 		}

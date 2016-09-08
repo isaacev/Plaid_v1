@@ -264,6 +264,40 @@ func (i *IndexAccessExpr) End() source.Pos {
 func (*IndexAccessExpr) exprNode() {}
 func (*IndexAccessExpr) stmtNode() {}
 
+// UnaryExpr represents a basic expression of the form:
+// <operator> <operand>
+type UnaryExpr struct {
+	Operator Token
+	Operand  Expr
+	_type    Type
+}
+
+// SetType populates the `_type` field of this expression (this is done during
+// the type-checking phase)
+func (u *UnaryExpr) SetType(_type Type) {
+	u._type = _type
+}
+
+// GetType returns the Type associated with this expression. This should never
+// be called before the expression has been type checked since it will return
+// `nil` in that case
+func (u *UnaryExpr) GetType() Type {
+	return u._type
+}
+
+// Pos returns the starting source code position of this node
+func (u *UnaryExpr) Pos() source.Pos {
+	return u.Operator.Span.Start
+}
+
+// End returns the terminal source code position of this node
+func (u *UnaryExpr) End() source.Pos {
+	return u.Operand.End()
+}
+
+func (*UnaryExpr) exprNode() {}
+func (*UnaryExpr) stmtNode() {}
+
 // BinaryExpr represents a basic expression of the form:
 // <left expr> <operator> <right expr>
 type BinaryExpr struct {
