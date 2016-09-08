@@ -16,7 +16,19 @@ func Disassemble(fn *FuncPrototype) {
 
 	fmt.Printf("  constants (%d) for %p\n", len(fn.Constants), fn)
 	for i, constant := range fn.Constants {
-		fmt.Printf("   #%d %v", i, constant)
+		var constType string
+		var constRep string
+
+		switch v := constant.(type) {
+		case string:
+			constType = "<string>"
+			constRep = fmt.Sprintf("\"%s\"", v)
+		default:
+			constType = "<?>"
+			constRep = fmt.Sprintf("%v", v)
+		}
+
+		fmt.Printf("   #%d %-8s %s\n", i, constType, constRep)
 	}
 
 	fmt.Printf("  upvalues (%d) for %p\n", len(fn.Upvalues), fn)
@@ -62,6 +74,11 @@ func disassembleBytecode(fn *FuncPrototype, b *Bytecode) {
 			value := bytesToFloat32(b.Bytes[i+1], b.Bytes[i+2], b.Bytes[i+3], b.Bytes[i+4])
 			dest := bytesToUint32(b.Bytes[i+5], b.Bytes[i+6], b.Bytes[i+7], b.Bytes[i+8])
 			fmt.Printf("   %4d %-9s $%.2f, r%d\n", i, "DecConst", value, dest)
+			i += 9
+		case OpcodeStrConst:
+			index := bytesToUint32(b.Bytes[i+1], b.Bytes[i+2], b.Bytes[i+3], b.Bytes[i+4])
+			dest := bytesToUint32(b.Bytes[i+5], b.Bytes[i+6], b.Bytes[i+7], b.Bytes[i+8])
+			fmt.Printf("   %4d %-9s #%d, r%d\n", i, "StrConst", index, dest)
 			i += 9
 		case OpcodeFuncConst:
 			index := bytesToUint32(b.Bytes[i+1], b.Bytes[i+2], b.Bytes[i+3], b.Bytes[i+4])
