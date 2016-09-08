@@ -128,6 +128,12 @@ func (state *assembly) getUpvalueRecord(name string) (exists bool, index int32) 
 	return false, 0
 }
 
+func (state *assembly) registerConstant(value interface{}) (constantIndex uint32) {
+	constantIndex = uint32(len(state.currFunc.Constants))
+	state.currFunc.Constants = append(state.currFunc.Constants, value)
+	return constantIndex
+}
+
 // compileFunction handles the compilation of a `frontend.FuncExpr` node when
 // encountered in the AST. The function compiles the function to a new
 // `FuncPrototype`, appends that prototype to the global list of all function
