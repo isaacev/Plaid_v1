@@ -2,53 +2,43 @@ package backend
 
 // TODO document opcodes
 const (
-	// Program halt
-	OpcodeHalt uint8 = 0x1
+	// Basic opcodes
+	OpcodeNop       uint8 = 0x01
+	OpcodeHalt      uint8 = 0x02
+	OpcodeBoolConst uint8 = 0x03
+	OpcodeIntConst  uint8 = 0x04
+	OpcodeDecConst  uint8 = 0x05
+	OpcodeStrConst  uint8 = 0x06
+	OpcodeFuncConst uint8 = 0x07
+	OpcodeMove      uint8 = 0x08
+	OpcodeLoadUpVal uint8 = 0x09
+	OpcodeSetUpVal  uint8 = 0x0A
+	OpcodeBrAlways  uint8 = 0x0B
+	OpcodeBrTrue    uint8 = 0x0C
+	OpcodeBrFalse   uint8 = 0x0D
+	OpcodeDispatch  uint8 = 0x0E
+	OpcodeReturn    uint8 = 0x0F
+	OpcodePrint     uint8 = 0x10
 
-	// Constant loading, move, and upvalue manipulation
-	OpcodeIntConst uint8 = 0x10
-	OpcodeDecConst uint8 = 0x11
-	// OpcodeStrConst  uint8 = 0x12
-	OpcodeFuncConst uint8 = 0x13
-	OpcodeMove      uint8 = 0x14
-	OpcodeLoadUpVal uint8 = 0x15
-	OpcodeSetUpVal  uint8 = 0x16
+	// Interger manipulation (0x70...0x7F)
+	OpcodeIntLT   uint8 = 0x70
+	OpcodeIntLTEq uint8 = 0x71
+	OpcodeIntGT   uint8 = 0x72
+	OpcodeIntGTEq uint8 = 0x73
+	OpcodeIntEq   uint8 = 0x74
+	OpcodeIntAdd  uint8 = 0x75
+	OpcodeIntSub  uint8 = 0x76
+	OpcodeIntMul  uint8 = 0x77
+	OpcodeIntDiv  uint8 = 0x78
 
-	// Branching
-	OpcodeBr      uint8 = 0x20
-	OpcodeBrTrue  uint8 = 0x21
-	OpcodeBrFalse uint8 = 0x22
-
-	// Interger comparison
-	OpcodeIntLT   uint8 = 0x30
-	OpcodeIntLTEq uint8 = 0x31
-	OpcodeIntGT   uint8 = 0x32
-	OpcodeIntGTEq uint8 = 0x33
-	OpcodeIntEq   uint8 = 0x34
-
-	// Decimal comparison
-	OpcodeDecLT   uint8 = 0x35
-	OpcodeDecLTEq uint8 = 0x36
-	OpcodeDecGT   uint8 = 0x37
-	OpcodeDecGTEq uint8 = 0x38
-	OpcodeDecEq   uint8 = 0x39
-
-	// Function calling and returning
-	OpcodeDispatch uint8 = 0x40
-	OpcodeReturn   uint8 = 0x41
-
-	// Integer arithmetic
-	OpcodeIntAdd uint8 = 0x50
-	OpcodeIntSub uint8 = 0x51
-	OpcodeIntMul uint8 = 0x52
-	OpcodeIntDiv uint8 = 0x53
-
-	// Decimal arithmetic
-	OpcodeDecAdd uint8 = 0x54
-	OpcodeDecSub uint8 = 0x55
-	OpcodeDecMul uint8 = 0x56
-	OpcodeDecDiv uint8 = 0x57
-
-	// Print statement
-	OpcodePrint uint8 = 0x90
+	// Decimal manipulation (0x80...0x8F)
+	OpcodeDecLT   uint8 = 0x80
+	OpcodeDecLTEq uint8 = 0x81
+	OpcodeDecGT   uint8 = 0x82
+	OpcodeDecGTEq uint8 = 0x83
+	OpcodeDecEq   uint8 = 0x84
+	OpcodeDecAdd  uint8 = 0x85
+	OpcodeDecSub  uint8 = 0x86
+	OpcodeDecMul  uint8 = 0x87
+	OpcodeDecDiv  uint8 = 0x88
 )
