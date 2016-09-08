@@ -71,6 +71,10 @@ func stringifyNode(generic Node) string {
 		str += ")"
 
 		return str
+	case *LoopStmt:
+		return fmt.Sprintf("(loop %s %s)",
+			stringifyNode(node.Clause.Condition),
+			stringifyNode(node.Clause.Body))
 	case *ClauseBody:
 		var body string
 
