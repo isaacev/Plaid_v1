@@ -459,9 +459,8 @@ func (*FuncLiteral) stmtNode()    {}
 
 // StrLiteral represents an instance of a string literal in the AST
 type StrLiteral struct {
-	Lexeme string
 	Value  string
-	Start  source.Pos
+	Token  Token
 	_type  *TypeOperator
 }
 
@@ -480,15 +479,12 @@ func (s StrLiteral) GetType() Type {
 
 // Pos returns the starting source code position of this node
 func (s *StrLiteral) Pos() source.Pos {
-	return s.Start
+	return s.Token.Span.Start
 }
 
 // End returns the terminal source code position of this node
 func (s *StrLiteral) End() source.Pos {
-	return source.Pos{
-		Line: s.Start.Line,
-		Col:  s.Start.Col + (len(s.Lexeme) - 1),
-	}
+	return s.Token.Span.End
 }
 
 func (*StrLiteral) literalNode() {}
@@ -497,10 +493,9 @@ func (*StrLiteral) stmtNode()    {}
 
 // DecLiteral represents an instance of a floating point literal in the AST
 type DecLiteral struct {
-	Lexeme string
-	Value  float32
-	Start  source.Pos
-	_type  *TypeOperator
+	Value float32
+	Token Token
+	_type *TypeOperator
 }
 
 // SetType populates the `_type` field of this expression (this is done during
@@ -518,12 +513,12 @@ func (d *DecLiteral) GetType() Type {
 
 // Pos returns the starting source code position of this node
 func (d *DecLiteral) Pos() source.Pos {
-	return d.Start
+	return d.Token.Span.Start
 }
 
 // End returns the terminal source code position of this node
 func (d *DecLiteral) End() source.Pos {
-	return source.Pos{d.Start.Line, d.Start.Col + (len(d.Lexeme) - 1)}
+	return d.Token.Span.End
 }
 
 func (*DecLiteral) literalNode() {}
@@ -532,10 +527,9 @@ func (*DecLiteral) stmtNode()    {}
 
 // IntLiteral represents an instance of an integer literal in the AST
 type IntLiteral struct {
-	Lexeme string
-	Value  int32
-	Start  source.Pos
-	_type  *TypeOperator
+	Value int32
+	Token Token
+	_type *TypeOperator
 }
 
 // SetType populates the `_type` field of this expression (this is done during
@@ -553,15 +547,12 @@ func (i *IntLiteral) GetType() Type {
 
 // Pos returns the starting source code position of this node
 func (i *IntLiteral) Pos() source.Pos {
-	return i.Start
+	return i.Token.Span.Start
 }
 
 // End returns the terminal source code position of this node
 func (i *IntLiteral) End() source.Pos {
-	return source.Pos{
-		Line: i.Start.Line,
-		Col:  i.Start.Col + (len(i.Lexeme) - 1),
-	}
+	return i.Token.Span.End
 }
 
 func (*IntLiteral) literalNode() {}
@@ -570,10 +561,9 @@ func (*IntLiteral) stmtNode()    {}
 
 // BoolLiteral represents an instance of a boolean keyword literal in the AST
 type BoolLiteral struct {
-	Lexeme string
-	Value  bool
-	Start  source.Pos
-	_type  *TypeOperator
+	Value bool
+	Token Token
+	_type *TypeOperator
 }
 
 // SetType populates the `_type` field of this expression (this is done during
@@ -591,15 +581,12 @@ func (b *BoolLiteral) GetType() Type {
 
 // Pos returns the starting source code position of this node
 func (b *BoolLiteral) Pos() source.Pos {
-	return b.Start
+	return b.Token.Span.Start
 }
 
 // End returns the terminal source code position of this node
 func (b *BoolLiteral) End() source.Pos {
-	return source.Pos{
-		Line: b.Start.Line,
-		Col:  b.Start.Col + (len(b.Lexeme) - 1),
-	}
+	return b.Token.Span.End
 }
 
 func (*BoolLiteral) literalNode() {}

@@ -21,9 +21,8 @@ func literalParselet(p *Parser, tok Token) (expr Node, msg feedback.Message) {
 	switch tok.Symbol {
 	case BooleanSymbol:
 		return &BoolLiteral{
-			Lexeme: tok.Lexeme,
-			Value:  tok.Lexeme == "true",
-			Start:  tok.Span.Start,
+			Value: tok.Lexeme == "true",
+			Token: tok,
 		}, nil
 	case IntegerSymbol:
 		// FIXME: parse more than just integers and handle this error
@@ -31,9 +30,8 @@ func literalParselet(p *Parser, tok Token) (expr Node, msg feedback.Message) {
 		i32 := int32(tmpInt64)
 
 		return &IntLiteral{
-			Lexeme: tok.Lexeme,
-			Value:  i32,
-			Start:  tok.Span.Start,
+			Value: i32,
+			Token: tok,
 		}, nil
 	case DecimalSymbol:
 		// FIXME: parse more than just floats and handle this error
@@ -41,9 +39,8 @@ func literalParselet(p *Parser, tok Token) (expr Node, msg feedback.Message) {
 		f32 := float32(f64)
 
 		return &DecLiteral{
-			Lexeme: tok.Lexeme,
-			Value:  f32,
-			Start:  tok.Span.Start,
+			Value: f32,
+			Token: tok,
 		}, nil
 	case StringSymbol:
 		var trimmed string
@@ -57,9 +54,8 @@ func literalParselet(p *Parser, tok Token) (expr Node, msg feedback.Message) {
 		trimmed = trimmed[1:]
 
 		return &StrLiteral{
-			Lexeme: tok.Lexeme,
-			Value:  trimmed,
-			Start:  tok.Span.Start,
+			Value: trimmed,
+			Token: tok,
 		}, nil
 	default:
 		return nil, feedback.Error{
