@@ -169,6 +169,32 @@ func (state *assembly) compileFunction(n *frontend.FuncLiteral) (prototypeIndex 
 	return prototypeIndex
 }
 
+type Placeholder struct {
+	PlacesHeld      []BytecodeAddress
+	Bytecode        *Bytecode
+}
+
+const bytesInInt32 int = 4
+
+func (ph *Placeholder) registerJump(inst Instruction) {
+	ph.Bytecode.Write(inst.Generate())
+	ph.PlacesHeld = append(ph.PlacesHeld, BytecodeAddress(ph.Bytecode.Size - bytesInInt32))
+}
+
+func (ph *Placeholder) computeJumps() {
+	computedAddress := BytecodeAddress(ph.Bytecode.Size)
+	addrBytes := addressToBytes(computedAddress)
+
+	// Overwrite the empty address field at each place-held location, overwrite
+	// 4 bytes for each byte in the 32 bit instruction address
+	for _, heldAddr := range ph.PlacesHeld {
+		ph.Bytecode.Bytes[heldAddr+0] = addrBytes[0]
+		ph.Bytecode.Bytes[heldAddr+1] = addrBytes[1]
+		ph.Bytecode.Bytes[heldAddr+2] = addrBytes[2]
+		ph.Bytecode.Bytes[heldAddr+3] = addrBytes[3]
+	}
+}
+
 // compile takes any AST node and represent's the node's semantic meaning in a
 // series of bytecode instructions written to the current `FuncPrototype`'s
 // `Bytecode` field
