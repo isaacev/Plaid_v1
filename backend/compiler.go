@@ -380,6 +380,14 @@ func (state *assembly) compile(node frontend.Node, destReg RegisterAddress) Regi
 		for i, arg := range n.Arguments {
 			paramReg := state.compile(arg, state.stackPtr)
 
+			// If a parameter isn't already stored on the register stack, move
+			// it to a location on that stack
+			if state.isRegisterOnStack(paramReg) == false {
+				state.currFunc.Bytecode.Write(Move{Source: paramReg, Dest: state.stackPtr}.Generate())
+				paramReg = state.stackPtr
+				state.stackPtr++
+			}
+
 			if i == 0 {
 				firstArgRegister = paramReg
 			}
