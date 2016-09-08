@@ -131,6 +131,16 @@ func (inter *Interpreter) Execute() {
 
 			// Reset the instruction poiner to what it was before the dispatch
 			inter.ip = lowerFrame.ReturnToAddress
+		case OpcodeIntLT:
+			fallthrough
+		case OpcodeIntLTEq:
+			fallthrough
+		case OpcodeIntGT:
+			fallthrough
+		case OpcodeIntGTEq:
+			fallthrough
+		case OpcodeIntEq:
+			fallthrough
 		case OpcodeIntAdd:
 			fallthrough
 		case OpcodeIntSub:
@@ -170,36 +180,42 @@ func (inter *Interpreter) Execute() {
 			}
 
 			// Actual math done here, once arguments have been cast
-			var result int32
+			var result interface{}
 
 			switch opcode {
+			case OpcodeIntLT:
+				// Compute the result
+				result = leftValue < rightValue
+			case OpcodeIntLTEq:
+				// Compute the result
+				result = leftValue <= rightValue
+			case OpcodeIntGT:
+				// Compute the result
+				result = leftValue > rightValue
+			case OpcodeIntGTEq:
+				// Compute the result
+				result = leftValue >= rightValue
+			case OpcodeIntEq:
+				// Compute the result
+				result = leftValue == rightValue
 			case OpcodeIntAdd:
 				// Compute the result
 				result = leftValue + rightValue
-
-				// Store the value in the appropriate register
-				inter.fp.Registers[dest].Value = result
 			case OpcodeIntSub:
 				// Compute the result
 				result = leftValue - rightValue
-
-				// Store the value in the appropriate register
-				inter.fp.Registers[dest].Value = result
 			case OpcodeIntMul:
 				// Compute the result
 				result = leftValue * rightValue
-
-				// Store the value in the appropriate register
-				inter.fp.Registers[dest].Value = result
 			case OpcodeIntDiv:
 				// Compute the result
 				leftFloat32 := float32(leftValue)
 				rightFloat32 := float32(rightValue)
-				result := leftFloat32 / rightFloat32
-
-				// Store the value in the appropriate register
-				inter.fp.Registers[dest].Value = result
+				result = leftFloat32 / rightFloat32
 			}
+
+			// Store the value in the appropriate register
+			inter.fp.Registers[dest].Value = result
 		case OpcodeDecAdd:
 			fallthrough
 		case OpcodeDecSub:
