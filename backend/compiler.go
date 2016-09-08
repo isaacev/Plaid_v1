@@ -516,6 +516,43 @@ func (state *assembly) compile(node frontend.Node, destReg RegisterAddress) Regi
 		}
 
 		doneLabel.computeJumps()
+	case *frontend.LoopStmt:
+		// Loop statement compiled structure:
+		//    ...
+		//    Jump to test
+		// Start block:
+		//    Block stmt 1
+		//    Block stmt 2
+		//    Block stmt ...
+		// Start test:
+		//    If test passes, jump to start of block, else keep going
+		//    ...
+
+		// Create a Placeholder object for managing forward jumps
+		loopTestLabel := Placeholder{Bytecode: state.currFunc.Bytecode}
+
+		// Add forward jump to start of loop condition
+		loopTestLabel.registerJump(BrAlways{})
+
+		// Remember the bytecode address at the start of the clause body for
+		// future jumps back to this location if the loop condition evalutes
+		// to TRUE
+		loopClauseLabelAddress := BytecodeAddress(state.currFunc.Bytecode.Size)
+
+		// Compile statements in clause body
+		for _, stmt := range n.Clause.Body.Statements {
+			state.compile(stmt, state.stackPtr)
+		}
+
+		// Compute jumps from before clause body
+		loopTestLabel.computeJumps()
+
+		// Compile loop condition
+		loopTestReg := state.compile(n.Clause.Condition, state.stackPtr)
+
+		// Compile optional jump which will jump to start of loop body only
+		// if loop condition emitted TRUE
+		state.currFunc.Bytecode.Write(BrTrue{Test: loopTestReg, Addr: loopClauseLabelAddress}.Generate())
 	default:
 		panic(fmt.Sprintf("unknown node of type %T", n))
 	}
