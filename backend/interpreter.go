@@ -277,6 +277,16 @@ func (inter *Interpreter) Execute() {
 
 			// Store the value in the appropriate register
 			inter.fp.Registers[dest].Value = result
+		case OpcodeDecLT:
+			fallthrough
+		case OpcodeDecLTEq:
+			fallthrough
+		case OpcodeDecGT:
+			fallthrough
+		case OpcodeDecGTEq:
+			fallthrough
+		case OpcodeDecEq:
+			fallthrough
 		case OpcodeDecAdd:
 			fallthrough
 		case OpcodeDecSub:
@@ -312,9 +322,19 @@ func (inter *Interpreter) Execute() {
 			}
 
 			// Actual math done here, once arguments have been cast
-			var result float32
+			var result interface{}
 
 			switch opcode {
+			case OpcodeDecLT:
+				result = leftValue < rightValue
+			case OpcodeDecLTEq:
+				result = leftValue <= rightValue
+			case OpcodeDecGT:
+				result = leftValue > rightValue
+			case OpcodeDecGTEq:
+				result = leftValue >= rightValue
+			case OpcodeDecEq:
+				result = leftValue == rightValue
 			case OpcodeDecAdd:
 				result = leftValue + rightValue
 			case OpcodeDecSub:
