@@ -92,6 +92,30 @@ func disassembleBytecode(fn *FuncPrototype, b *Bytecode) {
 			addr := bytesToUint32(b.Bytes[i+5], b.Bytes[i+6], b.Bytes[i+7], b.Bytes[i+8])
 			fmt.Printf("   %4d %-9s r%d, @%d\n", i, "BrTrue", test, addr)
 			i += 9
+		case OpcodeIntLT:
+			left := bytesToUint32(b.Bytes[i+1], b.Bytes[i+2], b.Bytes[i+3], b.Bytes[i+4])
+			right := bytesToUint32(b.Bytes[i+5], b.Bytes[i+6], b.Bytes[i+7], b.Bytes[i+8])
+			dest := bytesToUint32(b.Bytes[i+9], b.Bytes[i+10], b.Bytes[i+11], b.Bytes[i+12])
+			fmt.Printf("   %4d %-9s r%d, r%d, r%d\n", i, "IntLT", left, right, dest)
+			i += 13
+		case OpcodeIntLTEq:
+			left := bytesToUint32(b.Bytes[i+1], b.Bytes[i+2], b.Bytes[i+3], b.Bytes[i+4])
+			right := bytesToUint32(b.Bytes[i+5], b.Bytes[i+6], b.Bytes[i+7], b.Bytes[i+8])
+			dest := bytesToUint32(b.Bytes[i+9], b.Bytes[i+10], b.Bytes[i+11], b.Bytes[i+12])
+			fmt.Printf("   %4d %-9s r%d, r%d, r%d\n", i, "IntLT", left, right, dest)
+			i += 13
+		case OpcodeIntGT:
+			left := bytesToUint32(b.Bytes[i+1], b.Bytes[i+2], b.Bytes[i+3], b.Bytes[i+4])
+			right := bytesToUint32(b.Bytes[i+5], b.Bytes[i+6], b.Bytes[i+7], b.Bytes[i+8])
+			dest := bytesToUint32(b.Bytes[i+9], b.Bytes[i+10], b.Bytes[i+11], b.Bytes[i+12])
+			fmt.Printf("   %4d %-9s r%d, r%d, r%d\n", i, "IntLT", left, right, dest)
+			i += 13
+		case OpcodeIntGTEq:
+			left := bytesToUint32(b.Bytes[i+1], b.Bytes[i+2], b.Bytes[i+3], b.Bytes[i+4])
+			right := bytesToUint32(b.Bytes[i+5], b.Bytes[i+6], b.Bytes[i+7], b.Bytes[i+8])
+			dest := bytesToUint32(b.Bytes[i+9], b.Bytes[i+10], b.Bytes[i+11], b.Bytes[i+12])
+			fmt.Printf("   %4d %-9s r%d, r%d, r%d\n", i, "IntLT", left, right, dest)
+			i += 13
 		case OpcodeIntEq:
 			left := bytesToUint32(b.Bytes[i+1], b.Bytes[i+2], b.Bytes[i+3], b.Bytes[i+4])
 			right := bytesToUint32(b.Bytes[i+5], b.Bytes[i+6], b.Bytes[i+7], b.Bytes[i+8])
@@ -158,7 +182,42 @@ func disassembleBytecode(fn *FuncPrototype, b *Bytecode) {
 			left := bytesToUint32(b.Bytes[i+1], b.Bytes[i+2], b.Bytes[i+3], b.Bytes[i+4])
 			right := bytesToUint32(b.Bytes[i+5], b.Bytes[i+6], b.Bytes[i+7], b.Bytes[i+8])
 			dest := bytesToUint32(b.Bytes[i+9], b.Bytes[i+10], b.Bytes[i+11], b.Bytes[i+12])
-			fmt.Printf("   %4d %-9s r%d, r%d, r%d\n", i, "DecDiv", left, right, dest)
+			fmt.Printf("   %4d %-9s r%d, r%d\n", i, "DecDiv", left, right, dest)
+			i += 13
+		case OpcodeDecNeg:
+			operand := bytesToUint32(b.Bytes[i+1], b.Bytes[i+2], b.Bytes[i+3], b.Bytes[i+4])
+			dest := bytesToUint32(b.Bytes[i+5], b.Bytes[i+6], b.Bytes[i+7], b.Bytes[i+8])
+			fmt.Printf("   %4d %-9s r%d, r%d, r%d\n", i, "DecNeg", operand, dest)
+			i += 9
+		case OpcodeDecLT:
+			left := bytesToUint32(b.Bytes[i+1], b.Bytes[i+2], b.Bytes[i+3], b.Bytes[i+4])
+			right := bytesToUint32(b.Bytes[i+5], b.Bytes[i+6], b.Bytes[i+7], b.Bytes[i+8])
+			dest := bytesToUint32(b.Bytes[i+9], b.Bytes[i+10], b.Bytes[i+11], b.Bytes[i+12])
+			fmt.Printf("   %4d %-9s r%d, r%d, r%d\n", i, "DecLT", left, right, dest)
+			i += 13
+		case OpcodeDecLTEq:
+			left := bytesToUint32(b.Bytes[i+1], b.Bytes[i+2], b.Bytes[i+3], b.Bytes[i+4])
+			right := bytesToUint32(b.Bytes[i+5], b.Bytes[i+6], b.Bytes[i+7], b.Bytes[i+8])
+			dest := bytesToUint32(b.Bytes[i+9], b.Bytes[i+10], b.Bytes[i+11], b.Bytes[i+12])
+			fmt.Printf("   %4d %-9s r%d, r%d, r%d\n", i, "DecLT", left, right, dest)
+			i += 13
+		case OpcodeDecGT:
+			left := bytesToUint32(b.Bytes[i+1], b.Bytes[i+2], b.Bytes[i+3], b.Bytes[i+4])
+			right := bytesToUint32(b.Bytes[i+5], b.Bytes[i+6], b.Bytes[i+7], b.Bytes[i+8])
+			dest := bytesToUint32(b.Bytes[i+9], b.Bytes[i+10], b.Bytes[i+11], b.Bytes[i+12])
+			fmt.Printf("   %4d %-9s r%d, r%d, r%d\n", i, "DecLT", left, right, dest)
+			i += 13
+		case OpcodeDecGTEq:
+			left := bytesToUint32(b.Bytes[i+1], b.Bytes[i+2], b.Bytes[i+3], b.Bytes[i+4])
+			right := bytesToUint32(b.Bytes[i+5], b.Bytes[i+6], b.Bytes[i+7], b.Bytes[i+8])
+			dest := bytesToUint32(b.Bytes[i+9], b.Bytes[i+10], b.Bytes[i+11], b.Bytes[i+12])
+			fmt.Printf("   %4d %-9s r%d, r%d, r%d\n", i, "DecLT", left, right, dest)
+			i += 13
+		case OpcodeDecEq:
+			left := bytesToUint32(b.Bytes[i+1], b.Bytes[i+2], b.Bytes[i+3], b.Bytes[i+4])
+			right := bytesToUint32(b.Bytes[i+5], b.Bytes[i+6], b.Bytes[i+7], b.Bytes[i+8])
+			dest := bytesToUint32(b.Bytes[i+9], b.Bytes[i+10], b.Bytes[i+11], b.Bytes[i+12])
+			fmt.Printf("   %4d %-9s r%d, r%d, r%d\n", i, "DecEq", left, right, dest)
 			i += 13
 		case OpcodePrint:
 			source := bytesToUint32(b.Bytes[i+1], b.Bytes[i+2], b.Bytes[i+3], b.Bytes[i+4])
