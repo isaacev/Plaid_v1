@@ -45,6 +45,10 @@ func (inter *Interpreter) Execute() {
 		switch opcode := inter.readOpcode(); opcode {
 		case OpcodeHalt:
 			return
+		case OpcodeBoolConst:
+			value := (inter.readInt32() == 1)
+			dest := inter.readRegister()
+			inter.fp.Registers[dest] = &Register{Value: value}
 		case OpcodeIntConst:
 			value := inter.readInt32()
 			dest := inter.readRegister()

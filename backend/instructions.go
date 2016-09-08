@@ -15,6 +15,26 @@ func (inst Halt) Generate() (blob []byte) {
 	return blob
 }
 
+// BoolConst <32 bit integer value> <destination register>
+type BoolConst struct {
+	Value bool
+	Dest RegisterAddress
+}
+
+// Generate converts this instruction to raw bytes
+func (inst BoolConst) Generate() (blob []byte) {
+	blob = append(blob, OpcodeBoolConst)
+
+	if inst.Value {
+		blob = append(blob, int32ToBytes(1)...)
+	} else {
+		blob = append(blob, int32ToBytes(0)...)
+	}
+
+	blob = append(blob, registerToBytes(inst.Dest)...)
+	return blob
+}
+
 // IntConst <32 bit integer value> <destination register>
 type IntConst struct {
 	Value int32

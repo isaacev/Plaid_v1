@@ -41,6 +41,18 @@ func disassembleBytecode(fn *FuncPrototype, b *Bytecode) {
 		case OpcodeHalt:
 			fmt.Printf("   %4d Halt\n", i)
 			i += 1
+		case OpcodeBoolConst:
+			value := bytesToInt32(b.Bytes[i+1], b.Bytes[i+2], b.Bytes[i+3], b.Bytes[i+4])
+			dest := bytesToUint32(b.Bytes[i+5], b.Bytes[i+6], b.Bytes[i+7], b.Bytes[i+8])
+
+			strValue := "<false>"
+
+			if value == 1 {
+				strValue = "<true>"
+			}
+
+			fmt.Printf("   %4d %-9s %s, r%d\n", i, "BoolConst", strValue, dest)
+			i += 9
 		case OpcodeIntConst:
 			value := bytesToInt32(b.Bytes[i+1], b.Bytes[i+2], b.Bytes[i+3], b.Bytes[i+4])
 			dest := bytesToUint32(b.Bytes[i+5], b.Bytes[i+6], b.Bytes[i+7], b.Bytes[i+8])

@@ -174,6 +174,13 @@ func (state *assembly) compileFunction(n *frontend.FuncLiteral) (prototypeIndex 
 // `Bytecode` field
 func (state *assembly) compile(node frontend.Node, destReg RegisterAddress) RegisterAddress {
 	switch n := node.(type) {
+	case *frontend.BoolLiteral:
+		state.currFunc.Bytecode.Write(BoolConst{Value: n.Value, Dest: destReg}.Generate())
+
+		// increment the stackPtr if the integer constant wasn't stored in a reserved register
+		if state.isRegisterOnStack(destReg) {
+			state.stackPtr++
+		}
 	case *frontend.IntLiteral:
 		state.currFunc.Bytecode.Write(IntConst{Value: n.Value, Dest: destReg}.Generate())
 
