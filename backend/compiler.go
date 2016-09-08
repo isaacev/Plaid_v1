@@ -385,6 +385,110 @@ func (state *assembly) compile(node frontend.Node, destReg RegisterAddress) Regi
 	case *frontend.PrintStmt:
 		sourceReg := state.compile(n.Arguments[0], state.stackPtr)
 		state.currFunc.Bytecode.Write(Print{Source: sourceReg}.Generate())
+	case *frontend.IfStmt:
+		// 1. Declare label placeholders for ALL labels needed by the if
+		//    statement like:
+		//     - IfClauseStart
+		//     - []ElifClauseStart
+		//     - ElseClauseStart
+		//     - Done
+		// 2. When a forward jumping branch statement needs to be written to the
+		//    bytecode, call state.createForwardJump(<label placeholder>, <instruction>)
+		// 3. When a label point is reached, call state.computeJump(<label placeholder>)
+		//    and all instructions linked to the placeholder will be have their
+		//    placeholder bytes filled in within the bytecode
+
+		var ifClauseLabel, elseClauseLabel, doneLabel Placeholder
+		var elifClauseLabels []Placeholder
+
+		// Create the label to denote the beginning of the if-clause
+		ifClauseLabel = Placeholder{Bytecode: state.currFunc.Bytecode}
+
+		// Create labels to denote the beginnings of each elif-clause (if any
+		// elif-clauses exist)
+		for range n.ElifClauses {
+			elifClauseLabels = append(elifClauseLabels, Placeholder{Bytecode: state.currFunc.Bytecode})
+		}
+
+		// Create the label to denote the beginning of the else-clause (if an
+		// else-clause exists)
+		if n.ElseClause != nil {
+			elseClauseLabel = Placeholder{Bytecode: state.currFunc.Bytecode}
+		}
+
+		// Create the label to denote the end of the if-elif-else statement so
+		// that when any clause terminates it can jump past all other un-used
+		// clauses
+		doneLabel = Placeholder{Bytecode: state.currFunc.Bytecode}
+
+		// Compile if clause condition
+		ifTestReg := state.compile(n.IfClause.Condition, state.stackPtr)
+		ifClauseLabel.registerJump(BrTrue{Test: ifTestReg})
+
+		// Decrement the stack pointer to overwrite the temporary test register
+		if state.isRegisterOnStack(ifTestReg) {
+			state.stackPtr--
+		}
+
+		// Compile any elif-clause conditions
+		for i, clause := range n.ElifClauses {
+			elifTestReg := state.compile(clause.Condition, state.stackPtr)
+			elifClauseLabels[i].registerJump(BrTrue{Test: elifTestReg})
+
+			// Decrement the stack pointer to overwrite the temporary test register
+			if state.isRegisterOnStack(elifTestReg) {
+				state.stackPtr--
+			}
+		}
+
+		// If the statement has only if- and elif-clauses then its possible for
+		// the statement to execute without the execution of a single clause so
+		// if there is no else-clause, just jump to the end of the statement. If
+		// an else clause exists, jump to the start of that clause
+		if n.ElseClause == nil {
+			doneLabel.registerJump(BrAlways{})
+		} else {
+			elseClauseLabel.registerJump(BrAlways{})
+		}
+
+		// Compile if-clause body
+		ifClauseLabel.computeJumps()
+
+		for _, stmt := range n.IfClause.Body.Statements {
+			state.compile(stmt, state.stackPtr)
+		}
+
+		// Only include this jump after an if-clause if there are other clauses
+		// to skip over
+		if n.ElseClause != nil || len(n.ElifClauses) > 0 {
+			doneLabel.registerJump(BrAlways{})
+		}
+
+		// Compile any elif-clause bodies
+		for i, clause := range n.ElifClauses {
+			elifClauseLabels[i].computeJumps()
+
+			for _, stmt := range clause.Body.Statements {
+				state.compile(stmt, state.stackPtr)
+			}
+
+			// Only include this jump if there are more elif-clauses or an
+			// else-clause to skip
+			if n.ElseClause != nil || i < len(n.ElifClauses)-1 {
+				doneLabel.registerJump(BrAlways{})
+			}
+		}
+
+		// Compile the else-clause body (if it exists)
+		if n.ElseClause != nil {
+			elseClauseLabel.computeJumps()
+
+			for _, stmt := range n.ElseClause.Body.Statements {
+				state.compile(stmt, state.stackPtr)
+			}
+		}
+
+		doneLabel.computeJumps()
 	default:
 		panic(fmt.Sprintf("unknown node of type %T", n))
 	}
