@@ -123,15 +123,16 @@ func (inst SetUpVal) Generate() (blob []byte) {
 	return blob
 }
 
-// Br <bytecode address to jump to>
+// BrAlways <bytecode address to jump to>
 //  - will unconditionally jump to a given address
-type Br struct {
+type BrAlways struct {
 	Addr BytecodeAddress
 }
 
 // Generate converts this instruction to raw bytes
-func (inst Br) Generate() (blob []byte) {
-	blob = append(blob, OpcodeBr)
+//  - Addr field MUST BE LAST 4 BYTES OF INSTRUCTION (see compiler.go @ computeJumps)
+func (inst BrAlways) Generate() (blob []byte) {
+	blob = append(blob, OpcodeBrAlways)
 	blob = append(blob, addressToBytes(inst.Addr)...)
 	return blob
 }
@@ -139,14 +140,15 @@ func (inst Br) Generate() (blob []byte) {
 // BrTrue <decision register> <bytecode address>
 //  - will jump to the given address if the value in the decision register is 1
 type BrTrue struct {
-	Source RegisterAddress
-	Addr   BytecodeAddress
+	Test RegisterAddress
+	Addr BytecodeAddress
 }
 
 // Generate converts this instruction to raw bytes
+//  - Addr field MUST BE LAST 4 BYTES OF INSTRUCTION (see compiler.go @ computeJumps)
 func (inst BrTrue) Generate() (blob []byte) {
 	blob = append(blob, OpcodeBrTrue)
-	blob = append(blob, registerToBytes(inst.Source)...)
+	blob = append(blob, registerToBytes(inst.Test)...)
 	blob = append(blob, addressToBytes(inst.Addr)...)
 	return blob
 }
@@ -159,6 +161,7 @@ type BrFalse struct {
 }
 
 // Generate converts this instruction to raw bytes
+//  - Addr field MUST BE LAST 4 BYTES OF INSTRUCTION (see compiler.go @ computeJumps)
 func (inst BrFalse) Generate() (blob []byte) {
 	blob = append(blob, OpcodeBrFalse)
 	blob = append(blob, registerToBytes(inst.Source)...)

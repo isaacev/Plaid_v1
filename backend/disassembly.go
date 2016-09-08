@@ -83,6 +83,21 @@ func disassembleBytecode(fn *FuncPrototype, b *Bytecode) {
 			index := bytesToUint32(b.Bytes[i+5], b.Bytes[i+6], b.Bytes[i+7], b.Bytes[i+8])
 			fmt.Printf("   %4d %-9s r%d, #%d\n", i, "SetUpVal", source, index)
 			i += 9
+		case OpcodeBrAlways:
+			addr := bytesToUint32(b.Bytes[i+1], b.Bytes[i+2], b.Bytes[i+3], b.Bytes[i+4])
+			fmt.Printf("   %4d %-9s @%d\n", i, "BrAlways", addr)
+			i += 5
+		case OpcodeBrTrue:
+			test := bytesToUint32(b.Bytes[i+1], b.Bytes[i+2], b.Bytes[i+3], b.Bytes[i+4])
+			addr := bytesToUint32(b.Bytes[i+5], b.Bytes[i+6], b.Bytes[i+7], b.Bytes[i+8])
+			fmt.Printf("   %4d %-9s r%d, @%d\n", i, "BrTrue", test, addr)
+			i += 9
+		case OpcodeIntEq:
+			left := bytesToUint32(b.Bytes[i+1], b.Bytes[i+2], b.Bytes[i+3], b.Bytes[i+4])
+			right := bytesToUint32(b.Bytes[i+5], b.Bytes[i+6], b.Bytes[i+7], b.Bytes[i+8])
+			dest := bytesToUint32(b.Bytes[i+9], b.Bytes[i+10], b.Bytes[i+11], b.Bytes[i+12])
+			fmt.Printf("   %4d %-9s r%d, r%d, r%d\n", i, "IntEq", left, right, dest)
+			i += 13
 		case OpcodeDispatch:
 			source := bytesToUint32(b.Bytes[i+1], b.Bytes[i+2], b.Bytes[i+3], b.Bytes[i+4])
 			firstParamRegister := bytesToUint32(b.Bytes[i+5], b.Bytes[i+6], b.Bytes[i+7], b.Bytes[i+8])

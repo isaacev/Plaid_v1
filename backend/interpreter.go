@@ -74,6 +74,32 @@ func (inter *Interpreter) Execute() {
 			source := inter.readRegister()
 			index := inter.readInt32()
 			inter.fp.Closure.Upvalues[index].Cell.Value = inter.fp.Registers[source].Value
+		case OpcodeBrAlways:
+			addr := inter.readBytecodeAddress()
+			inter.ip = addr
+		case OpcodeBrTrue:
+			fallthrough
+		case OpcodeBrFalse:
+			testReg := inter.readRegister()
+			addr := inter.readBytecodeAddress()
+			testArg := inter.fp.Registers[testReg]
+
+			var testValue, ok bool
+
+			if testValue, ok = testArg.Value.(bool); ok == false {
+				panic(fmt.Sprintf("expected `bool`, found `%T`", testArg))
+			}
+
+			switch opcode {
+			case OpcodeBrTrue:
+				if testValue {
+					inter.ip = addr
+				}
+			case OpcodeBrFalse:
+				if testValue == false {
+					inter.ip = addr
+				}
+			}
 		case OpcodeDispatch:
 			closure := inter.fp.Registers[inter.readRegister()].Value.(*Closure)
 			firstParam := inter.readRegister()
