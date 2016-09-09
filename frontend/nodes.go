@@ -459,9 +459,9 @@ func (*FuncLiteral) stmtNode()    {}
 
 // StrLiteral represents an instance of a string literal in the AST
 type StrLiteral struct {
-	Value  string
-	Token  Token
-	_type  *TypeOperator
+	Value string
+	Token Token
+	_type *TypeOperator
 }
 
 // SetType populates the `_type` field of this expression (this is done during

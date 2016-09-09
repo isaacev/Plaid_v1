@@ -11,11 +11,16 @@ import (
 // code, generating a sequence of Tokens. As part of the Plaid frontend, Lexers
 // are also responsible for semicolon insertion
 type Lexer struct {
-	Scanner    *Scanner
-	Grammar    *Grammar
-	peekBuffer []Token
-	histBuffer []Token
-	eof        bool
+	Scanner        *Scanner
+	Grammar        *Grammar
+	peekBuffer     []Token
+	msgBuffer      []feedback.Message
+	histBuffer     []Token
+	eof            bool
+	openParenStack []int
+	openStrings    int
+
+	forceStringLexing bool
 }
 
 // NewLexer is a constructor function that takes a Scanner and a Grammar and
@@ -24,12 +29,21 @@ func NewLexer(file *source.File, grammar *Grammar) *Lexer {
 	scanner := NewScanner(file)
 
 	return &Lexer{
-		Scanner:    scanner,
-		Grammar:    grammar,
-		peekBuffer: []Token{},
-		histBuffer: []Token{},
-		eof:        false,
+		Scanner:        scanner,
+		Grammar:        grammar,
+		peekBuffer:     []Token{},
+		msgBuffer:      []feedback.Message{},
+		histBuffer:     []Token{},
+		eof:            false,
+		openParenStack: []int{0},
+		openStrings:    0,
+		forceStringLexing: false,
 	}
+}
+
+func (l *Lexer) deferToken(tok Token, msg feedback.Message) {
+	l.peekBuffer = append(l.peekBuffer, tok)
+	l.msgBuffer = append(l.msgBuffer, msg)
 }
 
 // readNextToken is responsible for digesting characters from a scanner and
@@ -74,6 +88,10 @@ func (l *Lexer) readNextToken() (tok Token, msg feedback.Message) {
 	}
 
 	peek, _, _, _ := l.Scanner.Peek()
+
+	if l.forceStringLexing {
+		return l.lexString()
+	}
 
 	if l.Grammar.isWhitespace(peek) {
 		return l.lexWhitespace()
@@ -343,54 +361,117 @@ func (l *Lexer) lexNumber() (tok Token, msg feedback.Message) {
 
 // String literal
 //  - match double quoted string, ignores escaped quotes
+//  - expressions can be embedded inside of strings via the interpolation
+//    syntax: `"string... \(2 + 2) string \(foo(4, 5, 6)) ... string"`
+//  - the interpolation syntax is patterned off of Swift's string syntax
 func (l *Lexer) lexString() (tok Token, msg feedback.Message) {
-	var r rune
-	var pos source.Pos
-	var eol, inEscapeSeq bool
-
 	var lexeme string
 	var span source.Span
 
+	startingRune, startingPos, _, _ := l.Scanner.Peek()
+	span.Start = startingPos
+	span.End = startingPos
+
+	if l.forceStringLexing {
+		l.forceStringLexing = false
+
+		if startingRune == '"' {
+			l.Scanner.Next()
+			return Token{StringSymbol, "", span}, nil
+		}
+	}
+
+	// String starting the normal way (as opposed to the lexing of strings
+	// that conclude string interpolation expressions)
+	if startingRune == '"' {
+		l.Scanner.Next()
+	}
+
 	for {
+		var r rune
+		var pos source.Pos
+		var eol bool
+
 		r, pos, eol, l.eof = l.Scanner.Next()
-
-		// If lexing just began, set the start position
-		if len(lexeme) == 0 {
-			span.Start = pos
-		}
-
-		// Append rune to lexeme and expand the token's span
-		lexeme += string(r)
-		span.End = pos
-
-		// Exit the loop if the rune was an unescaped double quote
-		if len(lexeme) > 1 && r == '"' && inEscapeSeq == false {
-			break
-		}
 
 		// Return with an error if the rune was the EOL or the EOF on an
 		// unterminated string literal
 		if eol || l.eof {
-			msg = feedback.Error{
+			return Token{StringSymbol, lexeme, span}, feedback.Error{
 				Classification: feedback.SyntaxError,
 				File:           l.Scanner.File,
 				What: feedback.Selection{
-					Description: "Unterminated string",
+					Description: "Unterminated string <middle rune>",
 					Span:        span,
 				},
 			}
-
-			return Token{StringSymbol, lexeme, span}, msg
 		}
 
-		// Set the `inEscapeSeq` flag if an unescaped backslash is encountered
-		if r == '\\' && inEscapeSeq == false {
-			inEscapeSeq = true
-			continue
+		if r == '\\' {
+			r, pos, eol, l.eof = l.Scanner.Next()
+
+			if eol || l.eof {
+				return Token{StringSymbol, lexeme, span}, feedback.Error{
+					Classification: feedback.SyntaxError,
+					File:           l.Scanner.File,
+					What: feedback.Selection{
+						Description: "Unterminated string",
+						Span:        span,
+					},
+				}
+			}
+
+			switch r {
+			case '\\':
+				lexeme += "\\\\"
+				span.End = pos
+			case 'n':
+				lexeme += "\\n"
+				span.End = pos
+			case '(':
+				// Create a special token to denote the beginning of a string
+				// interpolation. Defer this token with the lexer so it will be
+				// emitted after the current string token is returned
+				l.deferToken(Token{
+					LInterpolSymbol,
+					"\\(",
+					source.Span{
+						source.Pos{pos.Line, pos.Col-1},
+						pos,
+					},
+				}, nil)
+
+				// Push a new paren counter onto the paren counting stack to
+				// keep track of the matched paren pairs inside the string
+				// interpolation. When a `)` is reached and this counter is 0,
+				// then it is time to close the interpolation expression
+				l.openParenStack = append([]int{0}, l.openParenStack...)
+				l.openStrings++
+
+				// Return the current string token after the interpolation
+				// infrastructure has been initialized
+				return Token{StringSymbol, lexeme, span}, nil
+			default:
+				return Token{StringSymbol, lexeme, span}, feedback.Error{
+					Classification: feedback.SyntaxError,
+					File:           l.Scanner.File,
+					What: feedback.Selection{
+						Description: "Unknown escape sequence",
+						Span:        span,
+					},
+				}
+			}
 		}
 
-		// Reset the `inEscapeSeq` flag
-		inEscapeSeq = false
+		if r == '"' {
+			// Catch the closing quote and stop this lexing loop
+			span.End = pos
+			break
+		}
+
+		// Increment token terminal position and add the character to the lexeme
+		span.End = pos
+		lexeme += string(r)
 	}
 
 	return Token{StringSymbol, lexeme, span}, nil
@@ -439,6 +520,9 @@ func (l *Lexer) lexOperator() (tok Token, msg feedback.Message) {
 
 // Punctuators
 //  - always consist of a single character
+//  - this function also works in tanden with `lexString` to determine
+//    when a right-paren should be used to close a string interpolation
+//    expression
 func (l *Lexer) lexPunctuator() (tok Token, msg feedback.Message) {
 	var r rune
 	var pos source.Pos
@@ -447,6 +531,39 @@ func (l *Lexer) lexPunctuator() (tok Token, msg feedback.Message) {
 	var span source.Span
 
 	r, pos, _, l.eof = l.Scanner.Next()
+
+	// This statement keeps track of paired parentheses so that during string
+	// interpolation the correct right-paren is used to close the interpolation
+	// expression
+	if r == '(' {
+		l.openParenStack[0]++
+	} else if r == ')' {
+		// If some string is being interpolated and all inner parentheses are
+		// paried off, then it is OK to treat this left-paren as the closing
+		// interpolation parenthese.
+		if l.openParenStack[0] == 0 && l.openStrings > 0 {
+			// Since an interpolation string is being closed, decrement the
+			// counter counting the number of currently open interpolation
+			// strings
+			l.openStrings--
+
+			// Set this flag to force the string lexing function to handle the
+			// following characters
+			l.forceStringLexing = true
+
+			// Return the token that signals the closure of an interpolated
+			// expression
+			return Token{
+				RInterpolSymbol,
+				")",
+				source.Span{pos, pos},
+			}, nil
+		} else {
+			// Decrement paren counter if an interpolated string can't be closed
+			// but since a parenthese pair was closed
+			l.openParenStack[0]--
+		}
+	}
 
 	// Set lexeme and set the token's span
 	lexeme = string(r)
