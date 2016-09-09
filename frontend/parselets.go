@@ -43,18 +43,8 @@ func literalParselet(p *Parser, tok Token) (expr Node, msg feedback.Message) {
 			Token: tok,
 		}, nil
 	case StringSymbol:
-		var trimmed string
-
-		// trim trailing double quote
-		if last := len(tok.Lexeme) - 1; last >= 0 && tok.Lexeme[last] == '"' {
-			trimmed = tok.Lexeme[:last]
-		}
-
-		// trim leading double quote
-		trimmed = trimmed[1:]
-
 		return &StrLiteral{
-			Value: trimmed,
+			Value: tok.Lexeme,
 			Token: tok,
 		}, nil
 	default:
@@ -110,7 +100,7 @@ func unaryPrefixParselet(precedence int) unaryParselet {
 			if operandExpr, ok = operandNode.(Expr); ok == false {
 				return nil, feedback.Error{
 					Classification: feedback.IllegalStatementError,
-					File: p.Lexer.Scanner.File,
+					File:           p.Lexer.Scanner.File,
 					What: feedback.Selection{
 						Description: fmt.Sprintf("expected operand to be expression, not `%T`",
 							operandNode),
