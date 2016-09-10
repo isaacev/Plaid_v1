@@ -246,6 +246,11 @@ func disassembleBytecode(fn *FuncPrototype, b *Bytecode) {
 			source := bytesToUint32(b.Bytes[i+1], b.Bytes[i+2], b.Bytes[i+3], b.Bytes[i+4])
 			fmt.Printf("   %4d %-9s r%d\n", i, "Print", source)
 			i += 5
+		case OpcodeCastToStr:
+			source := bytesToUint32(b.Bytes[i+1], b.Bytes[i+2], b.Bytes[i+3], b.Bytes[i+4])
+			dest := bytesToUint32(b.Bytes[i+5], b.Bytes[i+6], b.Bytes[i+7], b.Bytes[i+8])
+			fmt.Printf("   %4d %-9s r%d, r%d\n", i, "CastToStr", source, dest)
+			i += 9
 		default:
 			panic(fmt.Sprintf("unknown opcode 0x%x", uint8(b.Bytes[i])))
 		}

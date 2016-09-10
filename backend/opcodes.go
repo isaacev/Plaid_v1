@@ -46,4 +46,7 @@ const (
 
 	// String manipulation (0x90...0x9F)
 	OpcodeStrConcat uint8 = 0x90
+
+	// Type casting (0xA0...0xAF)
+	OpcodeCastToStr  uint8 = 0xA3
 )

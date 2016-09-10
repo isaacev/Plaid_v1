@@ -564,3 +564,16 @@ func (inst Print) Generate() (blob []byte) {
 	blob = append(blob, registerToBytes(inst.Source)...)
 	return blob
 }
+
+type CastToStr struct {
+	Source RegisterAddress
+	Dest   RegisterAddress
+}
+
+// Generate converts this instruction to raw bytes
+func (inst CastToStr) Generate() (blob []byte) {
+	blob = append(blob, OpcodeCastToStr)
+	blob = append(blob, registerToBytes(inst.Source)...)
+	blob = append(blob, registerToBytes(inst.Dest)...)
+	return blob
+}

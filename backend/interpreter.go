@@ -399,6 +399,21 @@ func (inter *Interpreter) Execute() {
 		case OpcodePrint:
 			arg := inter.fp.Registers[inter.readRegister()]
 			fmt.Println(arg.Value)
+		case OpcodeCastToStr:
+			srcReg  := inter.readRegister()
+			destReg := inter.readRegister()
+
+			srcArg  := inter.fp.Registers[srcReg]
+
+			if srcArg == nil {
+				panic("expected any value, found <nil>")
+			}
+
+			if inter.fp.Registers[destReg] == nil {
+				inter.fp.Registers[destReg] = &Register{}
+			}
+
+			inter.fp.Registers[destReg].Value = fmt.Sprintf("%v", srcArg.Value)
 		default:
 			panic(fmt.Sprintf("unknown opcode 0x%x", opcode))
 		}
