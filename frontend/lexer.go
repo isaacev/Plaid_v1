@@ -425,9 +425,11 @@ func (l *Lexer) lexString() (tok Token, msg feedback.Message) {
 			case '\\':
 				lexeme += "\\\\"
 				span.End = pos
+				continue
 			case 'n':
 				lexeme += "\\n"
 				span.End = pos
+				continue
 			case '(':
 				// Create a special token to denote the beginning of a string
 				// interpolation. Defer this token with the lexer so it will be
