@@ -53,7 +53,7 @@ func newTypeTable() *typeTable {
 	a.AddMethod(&Method{"==", a, a, b})
 
 	// Str methods
-	d.AddMethod(&Method{"==", s, s, b})
+	s.AddMethod(&Method{"==", s, s, b})
 	s.AddMethod(&Method{"++", s, s, s})
 
 	// Dec arithmetic and comparison methods
