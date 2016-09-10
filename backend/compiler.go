@@ -257,7 +257,20 @@ func (state *assembly) compile(node frontend.Node, destReg RegisterAddress) Regi
 				// Expressions must be compiled, cast to a string, and then
 				// concatenated onto the partially complete template
 				exprReg := state.compile(n.Expressions[i], state.stackPtr)
-				state.currFunc.Bytecode.Write(CastToStr{Source: exprReg, Dest: exprReg}.Generate())
+
+				if state.isRegisterOnStack(exprReg) {
+					// Overwrite the temporary value being cast if it is already
+					// stored in a temporary register
+					state.currFunc.Bytecode.Write(CastToStr{Source: exprReg, Dest: exprReg}.Generate())
+				} else {
+					// If the expression was stored in a reserved register, save
+					// the result of the cast to a temporary register and
+					// increment the stack pointer
+					state.currFunc.Bytecode.Write(CastToStr{Source: exprReg, Dest: state.stackPtr}.Generate())
+					exprReg = state.stackPtr
+					state.stackPtr++
+				}
+
 				state.currFunc.Bytecode.Write(StrConcat{Left: destReg, Right: exprReg, Dest: destReg}.Generate())
 
 				// Decrement the stack pointer to signal that any temporary
