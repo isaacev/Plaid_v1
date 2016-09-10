@@ -587,7 +587,7 @@ func (l *Lexer) Peek() (tok Token, msg feedback.Message) {
 		msg = nil
 	} else {
 		tok, msg = l.readNextToken()
-		l.peekBuffer = append(l.peekBuffer, tok)
+		l.peekBuffer = append([]Token{tok}, l.peekBuffer...)
 	}
 
 	return tok, msg
