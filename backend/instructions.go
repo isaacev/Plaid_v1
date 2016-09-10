@@ -514,6 +514,15 @@ type DecDiv struct {
 	Dest  RegisterAddress
 }
 
+// Generate converts this instruction to raw bytes
+func (inst DecDiv) Generate() (blob []byte) {
+	blob = append(blob, OpcodeDecDiv)
+	blob = append(blob, registerToBytes(inst.Left)...)
+	blob = append(blob, registerToBytes(inst.Right)...)
+	blob = append(blob, registerToBytes(inst.Dest)...)
+	return blob
+}
+
 // DecNeg <operand> <destination register>
 type DecNeg struct {
 	Operand RegisterAddress
@@ -524,15 +533,6 @@ type DecNeg struct {
 func (inst DecNeg) Generate() (blob []byte) {
 	blob = append(blob, OpcodeDecNeg)
 	blob = append(blob, registerToBytes(inst.Operand)...)
-	blob = append(blob, registerToBytes(inst.Dest)...)
-	return blob
-}
-
-// Generate converts this instruction to raw bytes
-func (inst DecDiv) Generate() (blob []byte) {
-	blob = append(blob, OpcodeDecDiv)
-	blob = append(blob, registerToBytes(inst.Left)...)
-	blob = append(blob, registerToBytes(inst.Right)...)
 	blob = append(blob, registerToBytes(inst.Dest)...)
 	return blob
 }
