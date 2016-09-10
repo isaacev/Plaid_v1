@@ -237,18 +237,34 @@ func (state *assembly) compile(node frontend.Node, destReg RegisterAddress) Regi
 		}
 	case *frontend.TemplateLiteral:
 		for i, strConst := range n.Strings {
-			prevStackPtr := state.stackPtr
-			strReg := state.compile(strConst, state.stackPtr)
-
-			if i < len(n.Expressions) {
-				exprReg := state.compile(n.Expressions[i], state.stackPtr)
-				state.currFunc.Bytecode.Write(CastToStr{Source: exprReg, Dest: exprReg}.Generate())
-				state.currFunc.Bytecode.Write(StrConcat{Left: strReg, Right: exprReg, Dest: destReg}.Generate())
+			if i == 0 {
+				// The first string constant can be immediately loaded into
+				// the destination register without any concatenation or casting
+				state.compile(strConst, destReg)
 			} else {
+				// All other string constants must be manually concatenated onto
+				// the partially complete template
+				strReg := state.compile(strConst, state.stackPtr)
 				state.currFunc.Bytecode.Write(StrConcat{Left: destReg, Right: strReg, Dest: destReg}.Generate())
+
+				// Decrement the stack pointer to signal that the register
+				// holding the string constant can be safely overwritten now
+				// that its contents are in the template's register
+				state.stackPtr--
 			}
 
-			state.stackPtr = prevStackPtr
+			if i < len(n.Expressions) {
+				// Expressions must be compiled, cast to a string, and then
+				// concatenated onto the partially complete template
+				exprReg := state.compile(n.Expressions[i], state.stackPtr)
+				state.currFunc.Bytecode.Write(CastToStr{Source: exprReg, Dest: exprReg}.Generate())
+				state.currFunc.Bytecode.Write(StrConcat{Left: destReg, Right: exprReg, Dest: destReg}.Generate())
+
+				// Decrement the stack pointer to signal that any temporary
+				// registers used in the compilation of the expression can be
+				// safely overwritten
+				state.stackPtr--
+			}
 		}
 
 		if state.isRegisterOnStack(destReg) {
