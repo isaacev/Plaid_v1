@@ -350,6 +350,13 @@ func (state *assembly) compile(node frontend.Node, destReg RegisterAddress) Regi
 			default:
 				panic(fmt.Sprintf("unknown operator: '%s'", string(n.Operator)))
 			}
+		case "Str":
+			switch n.Operator {
+			case "++":
+				state.currFunc.Bytecode.Write(StrConcat{Left: leftReg, Right: rightReg, Dest: destReg}.Generate())
+			default:
+				panic(fmt.Sprintf("unknown operator: '%s'", string(n.Operator)))
+			}
 		}
 
 		if state.isRegisterOnStack(leftReg) {
