@@ -3,6 +3,7 @@ package frontend
 import (
 	"fmt"
 	"strconv"
+	"unicode/utf8"
 
 	"github.com/isaacev/Plaid/feedback"
 	"github.com/isaacev/Plaid/source"
@@ -48,7 +49,7 @@ func literalParselet(p *Parser, tok Token) (expr Node, msg feedback.Message) {
 
 			// Add the first string element to the template
 			template.Strings = append(template.Strings, &StrLiteral{
-				Value: tok.Lexeme,
+				Value: replaceEscapedSequences(tok.Lexeme),
 				Token: tok,
 			})
 
@@ -86,7 +87,7 @@ func literalParselet(p *Parser, tok Token) (expr Node, msg feedback.Message) {
 					return nil, msg
 				} else {
 					template.Strings = append(template.Strings, &StrLiteral{
-						Value: tok.Lexeme,
+						Value: replaceEscapedSequences(tok.Lexeme),
 						Token: tok,
 					})
 				}
@@ -95,7 +96,7 @@ func literalParselet(p *Parser, tok Token) (expr Node, msg feedback.Message) {
 			return template, nil
 		} else {
 			return &StrLiteral{
-				Value: tok.Lexeme,
+				Value: replaceEscapedSequences(tok.Lexeme),
 				Token: tok,
 			}, nil
 		}
@@ -109,6 +110,37 @@ func literalParselet(p *Parser, tok Token) (expr Node, msg feedback.Message) {
 			},
 		}
 	}
+}
+
+func replaceEscapedSequences(escaped string) (unescaped string) {
+	var nextByte int
+	var inEscapeSequence bool
+
+	for nextByte < len(escaped) {
+		runeValue, runeWidth := utf8.DecodeRuneInString(escaped[nextByte:])
+		nextByte += runeWidth
+
+		if inEscapeSequence {
+			switch runeValue {
+			case '\\':
+				unescaped += "\\"
+			case 'n':
+				unescaped += "\n"
+			}
+
+			inEscapeSequence = false
+			continue
+		}
+
+		if runeValue == '\\' {
+			inEscapeSequence = true
+			continue
+		}
+
+		unescaped += string(runeValue)
+	}
+
+	return unescaped
 }
 
 func groupParselet(p *Parser, leftParen Token) (expr Node, err feedback.Message) {
