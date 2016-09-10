@@ -162,6 +162,18 @@ func stringifyNode(generic Node) string {
 		return fmt.Sprintf("[%s %d]", stringifyType(node), node.Value)
 	case *DecLiteral:
 		return fmt.Sprintf("[%s %.2f]", stringifyType(node), node.Value)
+	case *TemplateLiteral:
+		var contents string
+
+		for i, str := range node.Strings {
+			contents += stringifyNode(str)
+
+			if i < len(node.Expressions) {
+				contents += ", " + stringifyNode(node.Expressions[i])
+			}
+		}
+
+		return fmt.Sprintf("[%s (%s)]", stringifyType(node), contents)
 	case *StrLiteral:
 		return fmt.Sprintf("[%s `%s`]", stringifyType(node), node.Value)
 	case *BoolLiteral:

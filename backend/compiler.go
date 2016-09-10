@@ -235,6 +235,25 @@ func (state *assembly) compile(node frontend.Node, destReg RegisterAddress) Regi
 		if state.isRegisterOnStack(destReg) {
 			state.stackPtr++
 		}
+	case *frontend.TemplateLiteral:
+		for i, strConst := range n.Strings {
+			prevStackPtr := state.stackPtr
+			strReg := state.compile(strConst, state.stackPtr)
+
+			if i < len(n.Expressions) {
+				exprReg := state.compile(n.Expressions[i], state.stackPtr)
+				state.currFunc.Bytecode.Write(CastToStr{Source: exprReg, Dest: exprReg}.Generate())
+				state.currFunc.Bytecode.Write(StrConcat{Left: strReg, Right: exprReg, Dest: destReg}.Generate())
+			} else {
+				state.currFunc.Bytecode.Write(StrConcat{Left: destReg, Right: strReg, Dest: destReg}.Generate())
+			}
+
+			state.stackPtr = prevStackPtr
+		}
+
+		if state.isRegisterOnStack(destReg) {
+			state.stackPtr++
+		}
 	case *frontend.FuncLiteral:
 		constantIndex := state.compileFunction(n)
 		state.currFunc.Bytecode.Write(FuncConst{ConstantIndex: constantIndex, Dest: destReg}.Generate())

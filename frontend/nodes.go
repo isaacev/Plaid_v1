@@ -457,6 +457,39 @@ func (*FuncLiteral) literalNode() {}
 func (*FuncLiteral) exprNode()    {}
 func (*FuncLiteral) stmtNode()    {}
 
+type TemplateLiteral struct {
+	Strings     []*StrLiteral
+	Expressions []Expr
+	_type       *TypeOperator
+}
+
+// SetType populates the `_type` field of this expression (this is done during
+// the type-checking phase)
+func (s *TemplateLiteral) SetType(_type Type) {
+	s._type = _type.(*TypeOperator)
+}
+
+// GetType returns the Type associated with this expression. This should never
+// be called before the expression has been type checked since it will return
+// `nil` in that case
+func (s TemplateLiteral) GetType() Type {
+	return s._type
+}
+
+// Pos returns the starting source code position of this node
+func (s *TemplateLiteral) Pos() source.Pos {
+	return s.Strings[0].Pos()
+}
+
+// End returns the terminal source code position of this node
+func (s *TemplateLiteral) End() source.Pos {
+	return s.Strings[len(s.Strings)-1].End()
+}
+
+func (*TemplateLiteral) literalNode() {}
+func (*TemplateLiteral) exprNode()    {}
+func (*TemplateLiteral) stmtNode()    {}
+
 // StrLiteral represents an instance of a string literal in the AST
 type StrLiteral struct {
 	Value string

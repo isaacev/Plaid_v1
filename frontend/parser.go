@@ -132,6 +132,7 @@ func (p *Parser) nextPrecedence() (prec int, msg feedback.Message) {
 			tok.Symbol != TokenSymbol(",") &&
 			tok.Symbol != TokenSymbol(")") &&
 			tok.Symbol != TokenSymbol("}") &&
+			tok.Symbol != RInterpolSymbol &&
 			tok.Symbol != TokenSymbol("]") {
 			return 0, feedback.Error{
 				Classification: feedback.SyntaxError,

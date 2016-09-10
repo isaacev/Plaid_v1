@@ -43,10 +43,62 @@ func literalParselet(p *Parser, tok Token) (expr Node, msg feedback.Message) {
 			Token: tok,
 		}, nil
 	case StringSymbol:
-		return &StrLiteral{
-			Value: tok.Lexeme,
-			Token: tok,
-		}, nil
+		if p.Lexer.PeekMatches(LInterpolSymbol) {
+			template := &TemplateLiteral{}
+
+			// Add the first string element to the template
+			template.Strings = append(template.Strings, &StrLiteral{
+				Value: tok.Lexeme,
+				Token: tok,
+			})
+
+			for p.Lexer.PeekMatches(LInterpolSymbol) {
+				// Consume the token signalling the start of interpolation
+				if _, msg := p.Lexer.ExpectNext(LInterpolSymbol); msg != nil {
+					return nil, msg
+				}
+
+				// Consume the interpolated expression
+				if node, msg := p.parseExpression(0); msg != nil {
+					return nil, msg
+				} else {
+					if expr, ok := node.(Expr); ok {
+						template.Expressions = append(template.Expressions, expr)
+					} else {
+						return nil, feedback.Error{
+							Classification: feedback.IllegalStatementError,
+							File:           p.Lexer.Scanner.File,
+							What: feedback.Selection{
+								Description: "Expected an expression in string interpolation",
+								Span:        source.Span{node.Pos(), node.End()},
+							},
+						}
+					}
+				}
+
+				// Consume the token signalling the end of interpolation
+				if _, msg := p.Lexer.ExpectNext(RInterpolSymbol); msg != nil {
+					return nil, msg
+				}
+
+				// Consume the ending string
+				if tok, msg := p.Lexer.ExpectNext(StringSymbol); msg != nil {
+					return nil, msg
+				} else {
+					template.Strings = append(template.Strings, &StrLiteral{
+						Value: tok.Lexeme,
+						Token: tok,
+					})
+				}
+			}
+
+			return template, nil
+		} else {
+			return &StrLiteral{
+				Value: tok.Lexeme,
+				Token: tok,
+			}, nil
+		}
 	default:
 		return nil, feedback.Error{
 			Classification: feedback.SyntaxError,

@@ -69,6 +69,8 @@ func checkLiteral(scope *Scope, lit Literal) (msgs []feedback.Message) {
 		return checkListLiteral(scope, l)
 	case *FuncLiteral:
 		return checkFuncLiteral(scope, l)
+	case *TemplateLiteral:
+		return checkTemplateLiteral(scope, l)
 	case *StrLiteral:
 		return checkStrLiteral(scope, l)
 	case *DecLiteral:
@@ -721,6 +723,20 @@ func checkFuncBody(scope *Scope, expr *FuncLiteral) (msgs []feedback.Message) {
 	// can be built into the bytecode
 	for _, record := range funcScope.upvalues {
 		expr.Upvalues = append(expr.Upvalues, record)
+	}
+
+	return msgs
+}
+
+func checkTemplateLiteral(scope *Scope, expr *TemplateLiteral) (msgs []feedback.Message) {
+	expr.SetType(scope.types.builtin.Str)
+
+	for _, str := range expr.Strings {
+		str.SetType(scope.types.builtin.Str)
+	}
+
+	for _, e := range expr.Expressions {
+		msgs = append(msgs, checkExpr(scope, e)...)
 	}
 
 	return msgs
