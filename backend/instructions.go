@@ -537,6 +537,22 @@ func (inst DecNeg) Generate() (blob []byte) {
 	return blob
 }
 
+// StrConcat <left operand> <right operand> <destination register>
+type StrConcat struct {
+	Left  RegisterAddress
+	Right RegisterAddress
+	Dest  RegisterAddress
+}
+
+// Generate converts this instruction to raw bytes
+func (inst StrConcat) Generate() (blob []byte) {
+	blob = append(blob, OpcodeStrConcat)
+	blob = append(blob, registerToBytes(inst.Left)...)
+	blob = append(blob, registerToBytes(inst.Right)...)
+	blob = append(blob, registerToBytes(inst.Dest)...)
+	return blob
+}
+
 // Print <register holding value to output to `stdin`>
 type Print struct {
 	Source RegisterAddress

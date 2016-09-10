@@ -43,4 +43,7 @@ const (
 	OpcodeDecMul  uint8 = 0x87
 	OpcodeDecDiv  uint8 = 0x88
 	OpcodeDecNeg  uint8 = 0x89
+
+	// String manipulation (0x90...0x9F)
+	OpcodeStrConcat uint8 = 0x90
 )

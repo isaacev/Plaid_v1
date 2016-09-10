@@ -87,6 +87,7 @@ func NewParser(file *source.File) *Parser {
 	p.addBinaryParselet(TokenSymbol("=="), 40, binaryInfixParselet(40))
 
 	// Arithmetic expressions
+	p.addBinaryParselet(TokenSymbol("++"), 50, binaryInfixParselet(50))
 	p.addBinaryParselet(TokenSymbol("+"), 50, binaryInfixParselet(50))
 	p.addBinaryParselet(TokenSymbol("-"), 50, binaryInfixParselet(50))
 	p.addBinaryParselet(TokenSymbol("*"), 60, binaryInfixParselet(60))

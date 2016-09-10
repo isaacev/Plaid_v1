@@ -355,6 +355,47 @@ func (inter *Interpreter) Execute() {
 			}
 
 			inter.fp.Registers[dest].Value = result
+		case OpcodeStrConcat:
+			leftReg := inter.readRegister()
+			rightReg := inter.readRegister()
+			leftArg := inter.fp.Registers[leftReg]
+			rightArg := inter.fp.Registers[rightReg]
+
+			// Register in which to store the concatenated string
+			dest := inter.readRegister()
+
+			var leftStr, rightStr string
+			var ok bool
+
+			if leftArg == nil {
+				panic("expected `string`, found <nil>")
+			}
+
+			if leftStr, ok = leftArg.Value.(string); ok == false {
+				panic(fmt.Sprintf("expected `string`, found `%T`", leftArg))
+			}
+
+			if rightArg == nil {
+				panic("expected `string`, found <nil>")
+			}
+
+			if rightStr, ok = rightArg.Value.(string); ok == false {
+				panic(fmt.Sprintf("expected `string`, found `%T`", rightArg))
+			}
+
+			// Actual math done here, once arguments have been cast
+			var result interface{}
+
+			switch opcode {
+			case OpcodeStrConcat:
+				result = leftStr + rightStr
+			}
+
+			if inter.fp.Registers[dest] == nil {
+				inter.fp.Registers[dest] = &Register{}
+			}
+
+			inter.fp.Registers[dest].Value = result
 		case OpcodePrint:
 			arg := inter.fp.Registers[inter.readRegister()]
 			fmt.Println(arg.Value)
