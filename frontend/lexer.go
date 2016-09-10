@@ -459,7 +459,10 @@ func (l *Lexer) lexString() (tok Token, msg feedback.Message) {
 					File:           l.Scanner.File,
 					What: feedback.Selection{
 						Description: "Unknown escape sequence",
-						Span:        span,
+						Span:        source.Span{
+							source.Pos{pos.Line, pos.Col-1},
+							pos,
+						},
 					},
 				}
 			}
