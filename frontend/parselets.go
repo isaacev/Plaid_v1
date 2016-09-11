@@ -172,7 +172,33 @@ func groupParselet(p *Parser, leftParen Token) (expr Node, err feedback.Message)
 	return inner, nil
 }
 
-func unaryPrefixParselet(precedence int) unaryParselet {
+func unaryPostfixParselet(precedence int) postfixParselet {
+	return func(p *Parser, tok Token, operand Node) (expr Node, msg feedback.Message) {
+		var operandExpr Expr
+		var ok bool
+
+		if operandExpr, ok = operand.(Expr); ok == false {
+			return nil, feedback.Error{
+				Classification: feedback.IllegalStatementError,
+				File:           p.Lexer.Scanner.File,
+				What: feedback.Selection{
+					Description: fmt.Sprintf(
+						"expected operand to be expression, not `%T`",
+						operand),
+					Span: source.Span{Start: operand.Pos(), End: operand.End()},
+				},
+			}
+		}
+
+		return &UnaryExpr{
+			Operator: tok,
+			Operand:  operandExpr,
+			IsPostfix: true,
+		}, nil
+	}
+}
+
+func unaryPrefixParselet(precedence int) prefixParselet {
 	return func(p *Parser, tok Token) (expr Node, msg feedback.Message) {
 		var operandExpr Expr
 
@@ -195,13 +221,14 @@ func unaryPrefixParselet(precedence int) unaryParselet {
 		}
 
 		return &UnaryExpr{
-			Operator: tok,
-			Operand:  operandExpr,
+			Operator:  tok,
+			Operand:   operandExpr,
+			IsPostfix: false,
 		}, nil
 	}
 }
 
-func binaryInfixParselet(precedence int) binaryParselet {
+func binaryInfixParselet(precedence int) postfixParselet {
 	return func(p *Parser, tok Token, left Node) (expr Node, msg feedback.Message) {
 		var right Node
 
@@ -684,6 +711,15 @@ func typeAnnotationParselet(p *Parser) (annotation TypeAnnotation, msg feedback.
 		// a function token: `=>`. Otherwise just return the annotation
 		if p.Lexer.PeekMatches(TokenSymbol("=>")) {
 			params = append(params, namedType)
+		} else if p.Lexer.PeekMatches(TokenSymbol("?")) {
+			if tok, msg := p.Lexer.ExpectNext(TokenSymbol("?")); msg != nil {
+				return nil, msg
+			} else {
+				return OptionalTypeAnnotation{
+					InnerType: namedType,
+					QuestionMarkToken: tok,
+				}, nil
+			}
 		} else {
 			return namedType, nil
 		}

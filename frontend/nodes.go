@@ -264,12 +264,14 @@ func (i *IndexAccessExpr) End() source.Pos {
 func (*IndexAccessExpr) exprNode() {}
 func (*IndexAccessExpr) stmtNode() {}
 
+
 // UnaryExpr represents a basic expression of the form:
-// <operator> <operand>
+// <operand> <operator>
 type UnaryExpr struct {
-	Operator Token
-	Operand  Expr
-	_type    Type
+	Operator  Token
+	Operand   Expr
+	IsPostfix bool
+	_type     Type
 }
 
 // SetType populates the `_type` field of this expression (this is done during
@@ -287,12 +289,20 @@ func (u *UnaryExpr) GetType() Type {
 
 // Pos returns the starting source code position of this node
 func (u *UnaryExpr) Pos() source.Pos {
-	return u.Operator.Span.Start
+	if u.IsPostfix {
+		return u.Operand.Pos()
+	} else {
+		return u.Operator.Span.Start
+	}
 }
 
 // End returns the terminal source code position of this node
 func (u *UnaryExpr) End() source.Pos {
-	return u.Operand.End()
+	if u.IsPostfix {
+		return u.Operator.Span.End
+	} else {
+		return u.Operand.Pos()
+	}
 }
 
 func (*UnaryExpr) exprNode() {}

@@ -22,17 +22,17 @@ func Parse(file *source.File) (ast *ProgramNode, msgs []feedback.Message) {
 	return ast, msgs
 }
 
-type binaryParselet func(*Parser, Token, Node) (Node, feedback.Message)
-type unaryParselet func(*Parser, Token) (Node, feedback.Message)
+type postfixParselet func(*Parser, Token, Node) (Node, feedback.Message)
+type prefixParselet func(*Parser, Token) (Node, feedback.Message)
 
-// Parser instances contain a Lexer instance and tables of unary and binary
+// Parser instances contain a Lexer instance and tables of prefix and postfix
 // operator precedences and parselets
 type Parser struct {
 	Lexer            *Lexer
-	binaryPrecedence map[TokenSymbol]int
-	unaryPrecedence  map[TokenSymbol]int
-	binaryParselets  map[TokenSymbol]binaryParselet
-	unaryParselets   map[TokenSymbol]unaryParselet
+	postfixPrecedence map[TokenSymbol]int
+	prefixPrecedence  map[TokenSymbol]int
+	postfixParselets  map[TokenSymbol]postfixParselet
+	prefixParselets   map[TokenSymbol]prefixParselet
 }
 
 // NewParser is a Parser factory function that populates the Parser's parselet
@@ -40,7 +40,7 @@ type Parser struct {
 // func NewParser(lexer *Lexer) *Parser {
 func NewParser(file *source.File) *Parser {
 	grammar := &Grammar{
-		OperatorRunes:   []rune{'+', '-', '*', '/', ':', '=', '<', '>'},
+		OperatorRunes:   []rune{'+', '-', '*', '/', ':', '=', '<', '>', '?', '!'},
 		PunctuatorRunes: []rune{'[', ']', '(', ')', '{', '}', ';', ',', '#'},
 		Keywords: []string{
 			"fn",
@@ -59,69 +59,70 @@ func NewParser(file *source.File) *Parser {
 
 	p := &Parser{
 		Lexer:            lexer,
-		binaryPrecedence: make(map[TokenSymbol]int),
-		unaryPrecedence:  make(map[TokenSymbol]int),
-		binaryParselets:  make(map[TokenSymbol]binaryParselet),
-		unaryParselets:   make(map[TokenSymbol]unaryParselet),
+		postfixPrecedence: make(map[TokenSymbol]int),
+		prefixPrecedence:  make(map[TokenSymbol]int),
+		postfixParselets:  make(map[TokenSymbol]postfixParselet),
+		prefixParselets:   make(map[TokenSymbol]prefixParselet),
 	}
 
-	p.addUnaryParselet(BooleanSymbol, 0, literalParselet)
-	p.addUnaryParselet(IntegerSymbol, 0, literalParselet)
-	p.addUnaryParselet(DecimalSymbol, 0, literalParselet)
-	p.addUnaryParselet(StringSymbol, 0, literalParselet)
-	p.addUnaryParselet(IdentSymbol, 0, identParselet)
-	p.addUnaryParselet(TokenSymbol("fn"), 0, funcParselet)
-	p.addUnaryParselet(LBracketSymbol, 0, listParselet)
+	p.addPrefixParselet(BooleanSymbol, 0, literalParselet)
+	p.addPrefixParselet(IntegerSymbol, 0, literalParselet)
+	p.addPrefixParselet(DecimalSymbol, 0, literalParselet)
+	p.addPrefixParselet(StringSymbol, 0, literalParselet)
+	p.addPrefixParselet(IdentSymbol, 0, identParselet)
+	p.addPrefixParselet(TokenSymbol("fn"), 0, funcParselet)
+	p.addPrefixParselet(LBracketSymbol, 0, listParselet)
 
-	p.addUnaryParselet(LParenSymbol, 0, groupParselet)
-	p.addBinaryParselet(LParenSymbol, 80, dispatchParselet)
+	p.addPrefixParselet(LParenSymbol, 0, groupParselet)
+	p.addPostfixParselet(LParenSymbol, 80, dispatchParselet)
 
 	// TODO: should assignment be kept an expression?
-	p.addBinaryParselet(TokenSymbol(":="), 10, assignmentParselet)
+	p.addPostfixParselet(TokenSymbol(":="), 10, assignmentParselet)
 
 	// Logical comparison expressions
-	p.addBinaryParselet(TokenSymbol("<"), 40, binaryInfixParselet(40))
-	p.addBinaryParselet(TokenSymbol(">"), 40, binaryInfixParselet(40))
-	p.addBinaryParselet(TokenSymbol("<="), 40, binaryInfixParselet(40))
-	p.addBinaryParselet(TokenSymbol(">="), 40, binaryInfixParselet(40))
-	p.addBinaryParselet(TokenSymbol("=="), 40, binaryInfixParselet(40))
+	p.addPostfixParselet(TokenSymbol("<"), 40, binaryInfixParselet(40))
+	p.addPostfixParselet(TokenSymbol(">"), 40, binaryInfixParselet(40))
+	p.addPostfixParselet(TokenSymbol("<="), 40, binaryInfixParselet(40))
+	p.addPostfixParselet(TokenSymbol(">="), 40, binaryInfixParselet(40))
+	p.addPostfixParselet(TokenSymbol("=="), 40, binaryInfixParselet(40))
 
 	// Arithmetic expressions
-	p.addBinaryParselet(TokenSymbol("++"), 50, binaryInfixParselet(50))
-	p.addBinaryParselet(TokenSymbol("+"), 50, binaryInfixParselet(50))
-	p.addBinaryParselet(TokenSymbol("-"), 50, binaryInfixParselet(50))
-	p.addBinaryParselet(TokenSymbol("*"), 60, binaryInfixParselet(60))
-	p.addBinaryParselet(TokenSymbol("/"), 60, binaryInfixParselet(60))
-	p.addUnaryParselet(TokenSymbol("-"), 70, unaryPrefixParselet(70))
+	p.addPostfixParselet(TokenSymbol("++"), 50, binaryInfixParselet(50))
+	p.addPostfixParselet(TokenSymbol("+"), 50, binaryInfixParselet(50))
+	p.addPostfixParselet(TokenSymbol("-"), 50, binaryInfixParselet(50))
+	p.addPostfixParselet(TokenSymbol("*"), 60, binaryInfixParselet(60))
+	p.addPostfixParselet(TokenSymbol("/"), 60, binaryInfixParselet(60))
+	p.addPrefixParselet(TokenSymbol("-"), 70, unaryPrefixParselet(70))
+
 
 	// List index access
-	p.addBinaryParselet(LBracketSymbol, 80, indexAccessParselet)
+	p.addPostfixParselet(LBracketSymbol, 80, indexAccessParselet)
 
 	// All statements have a binding-power of 0
-	p.addUnaryParselet(TokenSymbol("let"), 0, letDeclarationParselet)
-	p.addUnaryParselet(TokenSymbol("return"), 0, returnStatementParselet)
-	p.addUnaryParselet(TokenSymbol("if"), 0, ifStatementParselet)
-	p.addUnaryParselet(TokenSymbol("loop"), 0, loopStatementParselet)
-	p.addUnaryParselet(TokenSymbol("print"), 0, printStatementParselet)
+	p.addPrefixParselet(TokenSymbol("let"), 0, letDeclarationParselet)
+	p.addPrefixParselet(TokenSymbol("return"), 0, returnStatementParselet)
+	p.addPrefixParselet(TokenSymbol("if"), 0, ifStatementParselet)
+	p.addPrefixParselet(TokenSymbol("loop"), 0, loopStatementParselet)
+	p.addPrefixParselet(TokenSymbol("print"), 0, printStatementParselet)
 
 	return p
 }
 
-func (p *Parser) addBinaryParselet(sym TokenSymbol, precedence int, parselet binaryParselet) {
-	p.binaryPrecedence[sym] = precedence
-	p.binaryParselets[sym] = parselet
+func (p *Parser) addPostfixParselet(sym TokenSymbol, precedence int, parselet postfixParselet) {
+	p.postfixPrecedence[sym] = precedence
+	p.postfixParselets[sym] = parselet
 }
 
-func (p *Parser) addUnaryParselet(sym TokenSymbol, precedence int, parselet unaryParselet) {
-	p.unaryPrecedence[sym] = precedence
-	p.unaryParselets[sym] = parselet
+func (p *Parser) addPrefixParselet(sym TokenSymbol, precedence int, parselet prefixParselet) {
+	p.prefixPrecedence[sym] = precedence
+	p.prefixParselets[sym] = parselet
 }
 
 func (p *Parser) nextPrecedence() (prec int, msg feedback.Message) {
 	tok, msg := p.Lexer.Peek()
 
 	if msg == nil {
-		if prec, ok := p.binaryPrecedence[tok.Symbol]; ok {
+		if prec, ok := p.postfixPrecedence[tok.Symbol]; ok {
 			return prec, nil
 		}
 
@@ -167,10 +168,10 @@ func (p *Parser) parseExpression(precedence int) (node Node, msg feedback.Messag
 		}
 	}
 
-	if unaryParselet, ok := p.unaryParselets[tok.Symbol]; ok {
+	if prefixParselet, ok := p.prefixParselets[tok.Symbol]; ok {
 		var leftNode Node
 
-		if leftNode, msg = unaryParselet(p, tok); msg != nil {
+		if leftNode, msg = prefixParselet(p, tok); msg != nil {
 			return nil, msg
 		}
 
@@ -190,7 +191,7 @@ func (p *Parser) parseExpression(precedence int) (node Node, msg feedback.Messag
 				return nil, msg
 			}
 
-			if infixParselet, ok := p.binaryParselets[tok.Symbol]; ok {
+			if infixParselet, ok := p.postfixParselets[tok.Symbol]; ok {
 				if leftNode, msg = infixParselet(p, tok, leftNode); msg != nil {
 					return nil, msg
 				}

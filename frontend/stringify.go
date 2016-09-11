@@ -128,6 +128,10 @@ func stringifyNode(generic Node) string {
 			stringifyNode(node.Root),
 			stringifyNode(node.Index))
 	case *UnaryExpr:
+		// NOTE: the AST-stringified representation of unary expressions ignores
+		// the prefix/postfix distinction since that is largely a syntactic
+		// issue and does not bear heavily on the underlying structure of the
+		// syntax tree
 		return fmt.Sprintf("[%s (%s %s)]",
 			stringifyType(node),
 			string(node.Operator.Symbol),
