@@ -33,7 +33,8 @@ An example of the closures in action:
 
 Plaid is still unstable and prone to breaking changes. Upcoming changes (in no particular order) include:
 
-+ An optional type system similar to [Dart](https://www.dartlang.org/articles/language/optional-types)
-    + New syntax for declaring a typed-function's return type
-+ Support for Swift-style string interpolation, ex: `"\(name) hello"`
++ Optional types patterned off of Swift
 + A module import/export system
++ Type checking via an `is` operator
++ Type conversion via an `as` operator, ex: `x as Int`, returns optional-wrapped type
++ Improve native type method registration, maybe native Object API?
