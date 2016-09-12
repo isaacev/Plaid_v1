@@ -40,8 +40,29 @@ type Parser struct {
 // func NewParser(lexer *Lexer) *Parser {
 func NewParser(file *source.File) *Parser {
 	grammar := &Grammar{
-		OperatorRunes:   []rune{'+', '-', '*', '/', ':', '=', '<', '>', '?', '!'},
-		PunctuatorRunes: []rune{'[', ']', '(', ')', '{', '}', ';', ',', '#'},
+		OperatorRunes:   []rune{
+			'+',
+			'-',
+			'*',
+			'/',
+			':',
+			'=',
+			'<',
+			'>',
+			'?',
+			'!',
+		},
+		PunctuatorRunes: []rune{
+			'[',
+			']',
+			'(',
+			')',
+			'{',
+			'}',
+			';',
+			',',
+			'#',
+		},
 		Keywords: []string{
 			"fn",
 			"let",
