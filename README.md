@@ -10,23 +10,22 @@ The canonical example:
 
 An example of the closures in action:
 
-    let newCounter := (n::Integer) => {
+    let newCounter := fn (n: Int): () => Int {
         n := n - 1
-
-        return () => Integer {
+        return fn (): Int {
             n := n + 1
             return n
         }
     }
 
-    let c1 := newCounter()
-    let c2 := newCounter()
+    let c1 := newCounter(1)
+    let c2 := newCounter(10)
 
     print c1() # prints "1"
     print c1() # prints "2"
 
-    print c2() # prints "1"
-    print c2() # prints "2"
+    print c2() # prints "10"
+    print c2() # prints "11"
 
     print c1() # prints "3"
 
