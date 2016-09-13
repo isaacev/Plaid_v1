@@ -5,11 +5,11 @@ import (
 	"strings"
 )
 
-func StringifyAST(prog *ProgramNode) string {
-	return stringifyNode(prog)
+func StringifyAST(prog *ProgramNode, showTypes bool) string {
+	return stringifyNode(prog, showTypes)
 }
 
-func stringifyNode(generic Node) string {
+func stringifyNode(generic Node, showTypes bool) string {
 	const newline = "\n"
 
 	switch node := generic.(type) {
@@ -17,7 +17,7 @@ func stringifyNode(generic Node) string {
 		block := ""
 
 		for i := 0; i < len(node.Statements); i++ {
-			block += stringifyNode(node.Statements[i])
+			block += stringifyNode(node.Statements[i], showTypes)
 
 			if i+1 < len(node.Statements) {
 				block += newline
@@ -29,17 +29,25 @@ func stringifyNode(generic Node) string {
 			len(node.Upvalues),
 			indentString(block))
 	case *FuncLiteral:
-		return fmt.Sprintf("(func (locals=%d upvalues=%v) %s: %s %s)",
-			len(node.Locals),
-			len(node.Upvalues),
-			stringifyParams(node.Parameters),
-			node._type.returnType.String(),
-			stringifyNode(node.Body))
+		if showTypes {
+			return fmt.Sprintf("(func (locals=%d upvalues=%v) %s: %s %s)",
+				len(node.Locals),
+				len(node.Upvalues),
+				stringifyParams(node.Parameters, showTypes),
+				node._type.returnType.String(),
+				stringifyNode(node.Body, showTypes))
+		} else {
+			return fmt.Sprintf("(func (locals=%d upvalues=%v) %s: %s)",
+				len(node.Locals),
+				len(node.Upvalues),
+				stringifyParams(node.Parameters, showTypes),
+				stringifyNode(node.Body, showTypes))
+		}
 	case *FuncBody:
 		var body string
 
 		for i, stmt := range node.Statements {
-			body += stringifyNode(stmt)
+			body += stringifyNode(stmt, showTypes)
 
 			if i < len(node.Statements)-1 {
 				body += newline
@@ -54,18 +62,18 @@ func stringifyNode(generic Node) string {
 		// 	stringifyNode(node.IfClause.Body))
 
 		str := fmt.Sprintf("(if %s %s",
-			stringifyNode(node.IfClause.Condition),
-			stringifyNode(node.IfClause.Body))
+			stringifyNode(node.IfClause.Condition, showTypes),
+			stringifyNode(node.IfClause.Body, showTypes))
 
 		for _, clause := range node.ElifClauses {
 			str += fmt.Sprintf(" elif %s %s",
-				stringifyNode(clause.Condition),
-				stringifyNode(clause.Body))
+				stringifyNode(clause.Condition, showTypes),
+				stringifyNode(clause.Body, showTypes))
 		}
 
 		if node.ElseClause != nil {
 			str += fmt.Sprintf(" else %s",
-				stringifyNode(node.ElseClause.Body))
+				stringifyNode(node.ElseClause.Body, showTypes))
 		}
 
 		str += ")"
@@ -73,13 +81,13 @@ func stringifyNode(generic Node) string {
 		return str
 	case *LoopStmt:
 		return fmt.Sprintf("(loop %s %s)",
-			stringifyNode(node.Clause.Condition),
-			stringifyNode(node.Clause.Body))
+			stringifyNode(node.Clause.Condition, showTypes),
+			stringifyNode(node.Clause.Body, showTypes))
 	case *ClauseBody:
 		var body string
 
 		for i, stmt := range node.Statements {
-			body += stringifyNode(stmt)
+			body += stringifyNode(stmt, showTypes)
 
 			if i < len(node.Statements)-1 {
 				body += "\n"
@@ -91,66 +99,95 @@ func stringifyNode(generic Node) string {
 	case *PrintStmt:
 		// TODO improve to handle 0 or 2+ arguments
 		return fmt.Sprintf("(print %s)",
-			stringifyNode(node.Arguments[0]))
+			stringifyNode(node.Arguments[0], showTypes))
 	case *ReturnStmt:
 		if node.Argument != nil {
 			return fmt.Sprintf("(return %s)",
-				stringifyNode(node.Argument))
+				stringifyNode(node.Argument, showTypes))
 		} else {
 			return "(return)"
 		}
 	case *DeclarationStmt:
 		return fmt.Sprintf("(let \"%s\" %s)",
 			node.Assignee.Name,
-			stringifyNode(node.Assignment))
+			stringifyNode(node.Assignment, showTypes))
 	case *AssignmentStmt:
 		return fmt.Sprintf("(set \"%s\" %s)",
 			node.Assignee.Name,
-			stringifyNode(node.Assignment))
+			stringifyNode(node.Assignment, showTypes))
 	case *DispatchExpr:
 		var args string
 
 		for i, arg := range node.Arguments {
-			args += stringifyNode(arg)
+			args += stringifyNode(arg, showTypes)
 
 			if i < len(node.Arguments)-1 {
 				args += " "
 			}
 		}
 
-		return fmt.Sprintf("[%s (%s %s)]",
-			stringifyType(node),
-			stringifyNode(node.Root),
-			args)
+		if showTypes {
+			return fmt.Sprintf("[%s (%s %s)]",
+				stringifyType(node),
+				stringifyNode(node.Root, showTypes),
+				args)
+		} else {
+			return fmt.Sprintf("(%s %s)",
+				stringifyNode(node.Root, showTypes),
+				args)
+		}
 	case *IndexAccessExpr:
-		return fmt.Sprintf("[%s %s at %s]",
-			stringifyType(node),
-			stringifyNode(node.Root),
-			stringifyNode(node.Index))
+		if showTypes {
+			return fmt.Sprintf("[%s %s at %s]",
+				stringifyType(node),
+				stringifyNode(node.Root, showTypes),
+				stringifyNode(node.Index, showTypes))
+		} else {
+			return fmt.Sprintf("%s at %s",
+				stringifyNode(node.Root, showTypes),
+				stringifyNode(node.Index, showTypes))
+		}
 	case *UnaryExpr:
 		// NOTE: the AST-stringified representation of unary expressions ignores
 		// the prefix/postfix distinction since that is largely a syntactic
 		// issue and does not bear heavily on the underlying structure of the
 		// syntax tree
-		return fmt.Sprintf("[%s (%s %s)]",
-			stringifyType(node),
-			string(node.Operator.Symbol),
-			stringifyNode(node.Operand))
+		if showTypes {
+			return fmt.Sprintf("[%s (%s %s)]",
+				stringifyType(node),
+				string(node.Operator.Symbol),
+				stringifyNode(node.Operand, showTypes))
+		} else {
+			return fmt.Sprintf("(%s %s)",
+				string(node.Operator.Symbol),
+				stringifyNode(node.Operand, showTypes))
+		}
 	case *BinaryExpr:
-		return fmt.Sprintf("[%s (%s %s %s)]",
-			stringifyType(node),
-			string(node.Operator),
-			stringifyNode(node.Left),
-			stringifyNode(node.Right))
+		if showTypes {
+			return fmt.Sprintf("[%s (%s %s %s)]",
+				stringifyType(node),
+				string(node.Operator),
+				stringifyNode(node.Left, showTypes),
+				stringifyNode(node.Right, showTypes))
+		} else {
+			return fmt.Sprintf("(%s %s %s)",
+				string(node.Operator),
+				stringifyNode(node.Left, showTypes),
+				stringifyNode(node.Right, showTypes))
+		}
 	case *IdentExpr:
-		return fmt.Sprintf("[%s %s]",
-			stringifyType(node),
-			node.Name)
+		if showTypes {
+			return fmt.Sprintf("[%s %s]",
+				stringifyType(node),
+				node.Name)
+		} else {
+			return node.Name
+		}
 	case *ListLiteral:
 		var elements string
 
 		for i, elem := range node.Elements {
-			elements += stringifyNode(elem)
+			elements += stringifyNode(elem, showTypes)
 
 			if i < len(node.Elements)-1 {
 				elements += ", "
@@ -161,27 +198,51 @@ func stringifyNode(generic Node) string {
 			elements = "<empty>"
 		}
 
-		return fmt.Sprintf("[%s (list %s)]", stringifyType(node), elements)
+		if showTypes {
+			return fmt.Sprintf("[%s (list %s)]",
+				stringifyType(node),
+				elements)
+		} else {
+			return fmt.Sprintf("(list %s)",
+				elements)
+		}
 	case *IntLiteral:
-		return fmt.Sprintf("[%s %d]", stringifyType(node), node.Value)
+		if showTypes {
+			return fmt.Sprintf("[%s %d]",
+				stringifyType(node),
+				node.Value)
+		} else {
+			return fmt.Sprintf("%d",
+				node.Value)
+		}
 	case *DecLiteral:
-		return fmt.Sprintf("[%s %.2f]", stringifyType(node), node.Value)
+		if showTypes {
+			return fmt.Sprintf("[%s %.2f]",
+				stringifyType(node),
+				node.Value)
+		} else {
+			return fmt.Sprintf("%.2f",
+				node.Value)
+		}
 	case *TemplateLiteral:
 		var contents string
 
 		for i, str := range node.Strings {
-			contents += stringifyNode(str)
+			contents += stringifyNode(str, showTypes)
 
 			if i < len(node.Expressions) {
-				contents += ", " + stringifyNode(node.Expressions[i])
+				contents += ", " + stringifyNode(node.Expressions[i], showTypes)
 			}
 		}
 
-		return fmt.Sprintf("[%s (%s)]", stringifyType(node), contents)
+		return fmt.Sprintf("(%s)",
+			contents)
 	case *StrLiteral:
-		return fmt.Sprintf("[%s `%s`]", stringifyType(node), node.Value)
+		return fmt.Sprintf("`%s`",
+			node.Value)
 	case *BoolLiteral:
-		return fmt.Sprintf("[%s <%t>]", stringifyType(node), node.Value)
+		return fmt.Sprintf("<%t>",
+			node.Value)
 	default:
 		return fmt.Sprintf("<Unknown %T>", node)
 	}
@@ -218,16 +279,20 @@ func stringifyType(expr Expr) string {
 	return t.String()
 }
 
-func stringifyParams(params []*Parameter) string {
+func stringifyParams(params []*Parameter, showTypes bool) string {
 	out := "("
 
 	for i, param := range params {
 		if param.Annotation == nil {
 			out += param.Name.Name + ": Any"
 		} else {
-			out += fmt.Sprintf("%s: %s",
-				param.Name.Name,
-				stringifyAnnotation(param.Annotation))
+			if showTypes {
+				out += fmt.Sprintf("%s: %s",
+					param.Name.Name,
+					stringifyAnnotation(param.Annotation))
+			} else {
+				out += param.Name.Name
+			}
 		}
 
 		if i < len(params)-1 {

@@ -94,7 +94,7 @@ func digestFile(file *source.File, shouldRun bool) (msgs []feedback.Message) {
 		fmt.Println("##        AST        ##")
 		fmt.Println("#######################")
 		fmt.Println()
-		fmt.Println(frontend.StringifyAST(ast))
+		fmt.Println(frontend.StringifyAST(ast, true))
 		fmt.Println()
 	}
 
