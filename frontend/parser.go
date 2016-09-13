@@ -51,6 +51,7 @@ func NewParser(file *source.File) *Parser {
 			'>',
 			'?',
 			'!',
+			'.',
 		},
 		PunctuatorRunes: []rune{
 			'[',
@@ -115,6 +116,8 @@ func NewParser(file *source.File) *Parser {
 	p.addPostfixParselet(TokenSymbol("/"), 60, binaryInfixParselet(60))
 	p.addPrefixParselet(TokenSymbol("-"), 70, unaryPrefixParselet(70))
 
+	// Property and method access
+	p.addPostfixParselet(DotSymbol, 80, binaryInfixParselet(80))
 
 	// List index access
 	p.addPostfixParselet(LBracketSymbol, 80, indexAccessParselet)

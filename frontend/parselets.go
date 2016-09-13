@@ -411,10 +411,17 @@ func assignmentParselet(p *Parser, colonEqual Token, left Node) (expr Node, msg 
 
 func dispatchParselet(p *Parser, leftParen Token, left Node) (expr Node, msg feedback.Message) {
 	var root Expr
+	var rootBinary *BinaryExpr
 	var args []Expr
+	var ternary bool
 
 	if n, ok := left.(Expr); ok {
 		root = n
+
+		if rootBinary, ok = root.(*BinaryExpr); ok && rootBinary.Operator == "." {
+			// TODO: prove that `rootBinary.Right` is `*IdentExpr`
+			ternary = true
+		}
 	} else {
 		return nil, feedback.Error{
 			Classification: feedback.SyntaxError,
@@ -466,12 +473,22 @@ func dispatchParselet(p *Parser, leftParen Token, left Node) (expr Node, msg fee
 		return nil, msg
 	}
 
-	return &DispatchExpr{
-		Root:       root,
-		Arguments:  args,
-		LeftParen:  leftParen,
-		RightParen: rightParen,
-	}, nil
+	if ternary {
+		return &MethodDispatchExpr{
+			Root:       rootBinary.Left,
+			Method:     rootBinary.Right.(*IdentExpr),
+			LeftParen:  leftParen,
+			Arguments:  args,
+			RightParen: rightParen,
+		}, nil
+	} else {
+		return &DispatchExpr{
+			Root:       root,
+			Arguments:  args,
+			LeftParen:  leftParen,
+			RightParen: rightParen,
+		}, nil
+	}
 }
 
 func funcParselet(p *Parser, fnKeyword Token) (expr Node, err feedback.Message) {
