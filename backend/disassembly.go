@@ -55,7 +55,7 @@ func disassembleBytecode(fn *FuncPrototype, b *Bytecode) {
 			i += 1
 		case OpcodeBoolConst:
 			value := bytesToInt32(b.Bytes[i+1], b.Bytes[i+2], b.Bytes[i+3], b.Bytes[i+4])
-			dest := bytesToUint32(b.Bytes[i+5], b.Bytes[i+6], b.Bytes[i+7], b.Bytes[i+8])
+			dest := b.Bytes[i+5]
 
 			strValue := "<false>"
 
@@ -64,193 +64,210 @@ func disassembleBytecode(fn *FuncPrototype, b *Bytecode) {
 			}
 
 			fmt.Printf("   %4d %-9s %s, r%d\n", i, "BoolConst", strValue, dest)
-			i += 9
+			i += 6
 		case OpcodeIntConst:
 			value := bytesToInt32(b.Bytes[i+1], b.Bytes[i+2], b.Bytes[i+3], b.Bytes[i+4])
-			dest := bytesToUint32(b.Bytes[i+5], b.Bytes[i+6], b.Bytes[i+7], b.Bytes[i+8])
+			dest := b.Bytes[i+5]
 			fmt.Printf("   %4d %-9s $%d, r%d\n", i, "IntConst", value, dest)
-			i += 9
+			i += 6
 		case OpcodeDecConst:
 			value := bytesToFloat32(b.Bytes[i+1], b.Bytes[i+2], b.Bytes[i+3], b.Bytes[i+4])
-			dest := bytesToUint32(b.Bytes[i+5], b.Bytes[i+6], b.Bytes[i+7], b.Bytes[i+8])
+			dest := b.Bytes[i+5]
 			fmt.Printf("   %4d %-9s $%.2f, r%d\n", i, "DecConst", value, dest)
-			i += 9
+			i += 6
 		case OpcodeStrConst:
 			index := bytesToUint32(b.Bytes[i+1], b.Bytes[i+2], b.Bytes[i+3], b.Bytes[i+4])
-			dest := bytesToUint32(b.Bytes[i+5], b.Bytes[i+6], b.Bytes[i+7], b.Bytes[i+8])
+			dest := b.Bytes[i+5]
 			fmt.Printf("   %4d %-9s #%d, r%d\n", i, "StrConst", index, dest)
-			i += 9
+			i += 6
 		case OpcodeFuncConst:
 			index := bytesToUint32(b.Bytes[i+1], b.Bytes[i+2], b.Bytes[i+3], b.Bytes[i+4])
-			dest := bytesToUint32(b.Bytes[i+5], b.Bytes[i+6], b.Bytes[i+7], b.Bytes[i+8])
+			dest := b.Bytes[i+5]
 			fmt.Printf("   %4d %-9s #%d, r%d\n", i, "FuncConst", index, dest)
-			i += 9
+			i += 6
 		case OpcodeMove:
-			source := bytesToUint32(b.Bytes[i+1], b.Bytes[i+2], b.Bytes[i+3], b.Bytes[i+4])
-			dest := bytesToUint32(b.Bytes[i+5], b.Bytes[i+6], b.Bytes[i+7], b.Bytes[i+8])
+			source := b.Bytes[i+1]
+			dest := b.Bytes[i+2]
 			fmt.Printf("   %4d %-9s r%d, r%d\n", i, "Move", source, dest)
-			i += 9
+			i += 3
 		case OpcodeLoadUpVal:
 			index := bytesToInt32(b.Bytes[i+1], b.Bytes[i+2], b.Bytes[i+3], b.Bytes[i+4])
-			dest := bytesToUint32(b.Bytes[i+5], b.Bytes[i+6], b.Bytes[i+7], b.Bytes[i+8])
+			dest := b.Bytes[i+5]
 			fmt.Printf("   %4d %-9s #%d, r%d\n", i, "LoadUpVal", index, dest)
-			i += 9
+			i += 6
 		case OpcodeSetUpVal:
-			source := bytesToInt32(b.Bytes[i+1], b.Bytes[i+2], b.Bytes[i+3], b.Bytes[i+4])
-			index := bytesToUint32(b.Bytes[i+5], b.Bytes[i+6], b.Bytes[i+7], b.Bytes[i+8])
+			source := b.Bytes[i+1]
+			index := bytesToUint32(b.Bytes[i+2], b.Bytes[i+3], b.Bytes[i+4], b.Bytes[i+5])
 			fmt.Printf("   %4d %-9s r%d, #%d\n", i, "SetUpVal", source, index)
-			i += 9
+			i += 6
 		case OpcodeBrAlways:
 			addr := bytesToUint32(b.Bytes[i+1], b.Bytes[i+2], b.Bytes[i+3], b.Bytes[i+4])
 			fmt.Printf("   %4d %-9s @%d\n", i, "BrAlways", addr)
 			i += 5
 		case OpcodeBrTrue:
-			test := bytesToUint32(b.Bytes[i+1], b.Bytes[i+2], b.Bytes[i+3], b.Bytes[i+4])
-			addr := bytesToUint32(b.Bytes[i+5], b.Bytes[i+6], b.Bytes[i+7], b.Bytes[i+8])
+			test := b.Bytes[i+1]
+			addr := bytesToUint32(b.Bytes[i+2], b.Bytes[i+3], b.Bytes[i+4], b.Bytes[i+5])
 			fmt.Printf("   %4d %-9s r%d, @%d\n", i, "BrTrue", test, addr)
-			i += 9
+			i += 6
 		case OpcodeIntLT:
-			left := bytesToUint32(b.Bytes[i+1], b.Bytes[i+2], b.Bytes[i+3], b.Bytes[i+4])
-			right := bytesToUint32(b.Bytes[i+5], b.Bytes[i+6], b.Bytes[i+7], b.Bytes[i+8])
-			dest := bytesToUint32(b.Bytes[i+9], b.Bytes[i+10], b.Bytes[i+11], b.Bytes[i+12])
+			left := b.Bytes[i+1]
+			right := b.Bytes[i+2]
+			dest := b.Bytes[i+3]
 			fmt.Printf("   %4d %-9s r%d, r%d, r%d\n", i, "IntLT", left, right, dest)
-			i += 13
+			i += 4
 		case OpcodeIntLTEq:
-			left := bytesToUint32(b.Bytes[i+1], b.Bytes[i+2], b.Bytes[i+3], b.Bytes[i+4])
-			right := bytesToUint32(b.Bytes[i+5], b.Bytes[i+6], b.Bytes[i+7], b.Bytes[i+8])
-			dest := bytesToUint32(b.Bytes[i+9], b.Bytes[i+10], b.Bytes[i+11], b.Bytes[i+12])
+			left := b.Bytes[i+1]
+			right := b.Bytes[i+2]
+			dest := b.Bytes[i+3]
 			fmt.Printf("   %4d %-9s r%d, r%d, r%d\n", i, "IntLT", left, right, dest)
-			i += 13
+			i += 4
 		case OpcodeIntGT:
-			left := bytesToUint32(b.Bytes[i+1], b.Bytes[i+2], b.Bytes[i+3], b.Bytes[i+4])
-			right := bytesToUint32(b.Bytes[i+5], b.Bytes[i+6], b.Bytes[i+7], b.Bytes[i+8])
-			dest := bytesToUint32(b.Bytes[i+9], b.Bytes[i+10], b.Bytes[i+11], b.Bytes[i+12])
+			left := b.Bytes[i+1]
+			right := b.Bytes[i+2]
+			dest := b.Bytes[i+3]
 			fmt.Printf("   %4d %-9s r%d, r%d, r%d\n", i, "IntLT", left, right, dest)
-			i += 13
+			i += 4
 		case OpcodeIntGTEq:
-			left := bytesToUint32(b.Bytes[i+1], b.Bytes[i+2], b.Bytes[i+3], b.Bytes[i+4])
-			right := bytesToUint32(b.Bytes[i+5], b.Bytes[i+6], b.Bytes[i+7], b.Bytes[i+8])
-			dest := bytesToUint32(b.Bytes[i+9], b.Bytes[i+10], b.Bytes[i+11], b.Bytes[i+12])
+			left := b.Bytes[i+1]
+			right := b.Bytes[i+2]
+			dest := b.Bytes[i+3]
 			fmt.Printf("   %4d %-9s r%d, r%d, r%d\n", i, "IntLT", left, right, dest)
-			i += 13
+			i += 4
 		case OpcodeIntEq:
-			left := bytesToUint32(b.Bytes[i+1], b.Bytes[i+2], b.Bytes[i+3], b.Bytes[i+4])
-			right := bytesToUint32(b.Bytes[i+5], b.Bytes[i+6], b.Bytes[i+7], b.Bytes[i+8])
-			dest := bytesToUint32(b.Bytes[i+9], b.Bytes[i+10], b.Bytes[i+11], b.Bytes[i+12])
+			left := b.Bytes[i+1]
+			right := b.Bytes[i+2]
+			dest := b.Bytes[i+3]
 			fmt.Printf("   %4d %-9s r%d, r%d, r%d\n", i, "IntEq", left, right, dest)
-			i += 13
+			i += 4
 		case OpcodeDispatch:
-			source := bytesToUint32(b.Bytes[i+1], b.Bytes[i+2], b.Bytes[i+3], b.Bytes[i+4])
-			firstParamRegister := bytesToUint32(b.Bytes[i+5], b.Bytes[i+6], b.Bytes[i+7], b.Bytes[i+8])
+			source := b.Bytes[i+1]
+			firstParamRegister := b.Bytes[i+2]
 			fmt.Printf("   %4d %-9s r%d, (r%d...)\n", i, "Dispatch", source, firstParamRegister)
-			i += 9
+			i += 3
 		case OpcodeReturn:
-			source := bytesToUint32(b.Bytes[i+1], b.Bytes[i+2], b.Bytes[i+3], b.Bytes[i+4])
+			source := b.Bytes[i+1]
 			fmt.Printf("   %4d %-9s r%d\n", i, "Return", source)
-			i += 5
+			i += 2
 		case OpcodeIntAdd:
-			left := bytesToUint32(b.Bytes[i+1], b.Bytes[i+2], b.Bytes[i+3], b.Bytes[i+4])
-			right := bytesToUint32(b.Bytes[i+5], b.Bytes[i+6], b.Bytes[i+7], b.Bytes[i+8])
-			dest := bytesToUint32(b.Bytes[i+9], b.Bytes[i+10], b.Bytes[i+11], b.Bytes[i+12])
+			left := b.Bytes[i+1]
+			right := b.Bytes[i+2]
+			dest := b.Bytes[i+3]
 			fmt.Printf("   %4d %-9s r%d, r%d, r%d\n", i, "IntAdd", left, right, dest)
-			i += 13
+			i += 4
 		case OpcodeIntSub:
-			left := bytesToUint32(b.Bytes[i+1], b.Bytes[i+2], b.Bytes[i+3], b.Bytes[i+4])
-			right := bytesToUint32(b.Bytes[i+5], b.Bytes[i+6], b.Bytes[i+7], b.Bytes[i+8])
-			dest := bytesToUint32(b.Bytes[i+9], b.Bytes[i+10], b.Bytes[i+11], b.Bytes[i+12])
+			left := b.Bytes[i+1]
+			right := b.Bytes[i+2]
+			dest := b.Bytes[i+3]
 			fmt.Printf("   %4d %-9s r%d, r%d, r%d\n", i, "IntSub", left, right, dest)
-			i += 13
+			i += 4
 		case OpcodeIntMul:
-			left := bytesToUint32(b.Bytes[i+1], b.Bytes[i+2], b.Bytes[i+3], b.Bytes[i+4])
-			right := bytesToUint32(b.Bytes[i+5], b.Bytes[i+6], b.Bytes[i+7], b.Bytes[i+8])
-			dest := bytesToUint32(b.Bytes[i+9], b.Bytes[i+10], b.Bytes[i+11], b.Bytes[i+12])
+			left := b.Bytes[i+1]
+			right := b.Bytes[i+2]
+			dest := b.Bytes[i+3]
 			fmt.Printf("   %4d %-9s r%d, r%d, r%d\n", i, "IntMul", left, right, dest)
-			i += 13
+			i += 4
 		case OpcodeIntDiv:
-			left := bytesToUint32(b.Bytes[i+1], b.Bytes[i+2], b.Bytes[i+3], b.Bytes[i+4])
-			right := bytesToUint32(b.Bytes[i+5], b.Bytes[i+6], b.Bytes[i+7], b.Bytes[i+8])
-			dest := bytesToUint32(b.Bytes[i+9], b.Bytes[i+10], b.Bytes[i+11], b.Bytes[i+12])
+			left := b.Bytes[i+1]
+			right := b.Bytes[i+2]
+			dest := b.Bytes[i+3]
 			fmt.Printf("   %4d %-9s r%d, r%d, r%d\n", i, "IntDiv", left, right, dest)
-			i += 13
+			i += 4
 		case OpcodeIntNeg:
-			operand := bytesToUint32(b.Bytes[i+1], b.Bytes[i+2], b.Bytes[i+3], b.Bytes[i+4])
-			dest := bytesToUint32(b.Bytes[i+5], b.Bytes[i+6], b.Bytes[i+7], b.Bytes[i+8])
+			operand := b.Bytes[i+1]
+			dest := b.Bytes[i+2]
 			fmt.Printf("   %4d %-9s r%d, r%d\n", i, "IntNeg", operand, dest)
-			i += 9
+			i += 3
 		case OpcodeDecAdd:
-			left := bytesToUint32(b.Bytes[i+1], b.Bytes[i+2], b.Bytes[i+3], b.Bytes[i+4])
-			right := bytesToUint32(b.Bytes[i+5], b.Bytes[i+6], b.Bytes[i+7], b.Bytes[i+8])
-			dest := bytesToUint32(b.Bytes[i+9], b.Bytes[i+10], b.Bytes[i+11], b.Bytes[i+12])
+			left := b.Bytes[i+1]
+			right := b.Bytes[i+2]
+			dest := b.Bytes[i+3]
 			fmt.Printf("   %4d %-9s r%d, r%d, r%d\n", i, "DecAdd", left, right, dest)
-			i += 13
+			i += 4
 		case OpcodeDecSub:
-			left := bytesToUint32(b.Bytes[i+1], b.Bytes[i+2], b.Bytes[i+3], b.Bytes[i+4])
-			right := bytesToUint32(b.Bytes[i+5], b.Bytes[i+6], b.Bytes[i+7], b.Bytes[i+8])
-			dest := bytesToUint32(b.Bytes[i+9], b.Bytes[i+10], b.Bytes[i+11], b.Bytes[i+12])
+			left := b.Bytes[i+1]
+			right := b.Bytes[i+2]
+			dest := b.Bytes[i+3]
 			fmt.Printf("   %4d %-9s r%d, r%d, r%d\n", i, "DecSub", left, right, dest)
-			i += 13
+			i += 4
 		case OpcodeDecMul:
-			left := bytesToUint32(b.Bytes[i+1], b.Bytes[i+2], b.Bytes[i+3], b.Bytes[i+4])
-			right := bytesToUint32(b.Bytes[i+5], b.Bytes[i+6], b.Bytes[i+7], b.Bytes[i+8])
-			dest := bytesToUint32(b.Bytes[i+9], b.Bytes[i+10], b.Bytes[i+11], b.Bytes[i+12])
+			left := b.Bytes[i+1]
+			right := b.Bytes[i+2]
+			dest := b.Bytes[i+3]
 			fmt.Printf("   %4d %-9s r%d, r%d, r%d\n", i, "DecMul", left, right, dest)
-			i += 13
+			i += 4
 		case OpcodeDecDiv:
-			left := bytesToUint32(b.Bytes[i+1], b.Bytes[i+2], b.Bytes[i+3], b.Bytes[i+4])
-			right := bytesToUint32(b.Bytes[i+5], b.Bytes[i+6], b.Bytes[i+7], b.Bytes[i+8])
-			dest := bytesToUint32(b.Bytes[i+9], b.Bytes[i+10], b.Bytes[i+11], b.Bytes[i+12])
+			left := b.Bytes[i+1]
+			right := b.Bytes[i+2]
+			dest := b.Bytes[i+3]
 			fmt.Printf("   %4d %-9s r%d, r%d\n", i, "DecDiv", left, right, dest)
-			i += 13
+			i += 4
 		case OpcodeDecNeg:
-			operand := bytesToUint32(b.Bytes[i+1], b.Bytes[i+2], b.Bytes[i+3], b.Bytes[i+4])
-			dest := bytesToUint32(b.Bytes[i+5], b.Bytes[i+6], b.Bytes[i+7], b.Bytes[i+8])
-			fmt.Printf("   %4d %-9s r%d, r%d, r%d\n", i, "DecNeg", operand, dest)
-			i += 9
+			operand := b.Bytes[i+1]
+			dest := b.Bytes[i+2]
+			fmt.Printf("   %4d %-9s r%d, r%d\n", i, "DecNeg", operand, dest)
+			i += 3
 		case OpcodeDecLT:
-			left := bytesToUint32(b.Bytes[i+1], b.Bytes[i+2], b.Bytes[i+3], b.Bytes[i+4])
-			right := bytesToUint32(b.Bytes[i+5], b.Bytes[i+6], b.Bytes[i+7], b.Bytes[i+8])
-			dest := bytesToUint32(b.Bytes[i+9], b.Bytes[i+10], b.Bytes[i+11], b.Bytes[i+12])
+			left := b.Bytes[i+1]
+			right := b.Bytes[i+2]
+			dest := b.Bytes[i+3]
 			fmt.Printf("   %4d %-9s r%d, r%d, r%d\n", i, "DecLT", left, right, dest)
-			i += 13
+			i += 4
 		case OpcodeDecLTEq:
-			left := bytesToUint32(b.Bytes[i+1], b.Bytes[i+2], b.Bytes[i+3], b.Bytes[i+4])
-			right := bytesToUint32(b.Bytes[i+5], b.Bytes[i+6], b.Bytes[i+7], b.Bytes[i+8])
-			dest := bytesToUint32(b.Bytes[i+9], b.Bytes[i+10], b.Bytes[i+11], b.Bytes[i+12])
+			left := b.Bytes[i+1]
+			right := b.Bytes[i+2]
+			dest := b.Bytes[i+3]
 			fmt.Printf("   %4d %-9s r%d, r%d, r%d\n", i, "DecLT", left, right, dest)
-			i += 13
+			i += 4
 		case OpcodeDecGT:
-			left := bytesToUint32(b.Bytes[i+1], b.Bytes[i+2], b.Bytes[i+3], b.Bytes[i+4])
-			right := bytesToUint32(b.Bytes[i+5], b.Bytes[i+6], b.Bytes[i+7], b.Bytes[i+8])
-			dest := bytesToUint32(b.Bytes[i+9], b.Bytes[i+10], b.Bytes[i+11], b.Bytes[i+12])
+			left := b.Bytes[i+1]
+			right := b.Bytes[i+2]
+			dest := b.Bytes[i+3]
 			fmt.Printf("   %4d %-9s r%d, r%d, r%d\n", i, "DecLT", left, right, dest)
-			i += 13
+			i += 4
 		case OpcodeDecGTEq:
-			left := bytesToUint32(b.Bytes[i+1], b.Bytes[i+2], b.Bytes[i+3], b.Bytes[i+4])
-			right := bytesToUint32(b.Bytes[i+5], b.Bytes[i+6], b.Bytes[i+7], b.Bytes[i+8])
-			dest := bytesToUint32(b.Bytes[i+9], b.Bytes[i+10], b.Bytes[i+11], b.Bytes[i+12])
+			left := b.Bytes[i+1]
+			right := b.Bytes[i+2]
+			dest := b.Bytes[i+3]
 			fmt.Printf("   %4d %-9s r%d, r%d, r%d\n", i, "DecLT", left, right, dest)
-			i += 13
+			i += 4
 		case OpcodeDecEq:
-			left := bytesToUint32(b.Bytes[i+1], b.Bytes[i+2], b.Bytes[i+3], b.Bytes[i+4])
-			right := bytesToUint32(b.Bytes[i+5], b.Bytes[i+6], b.Bytes[i+7], b.Bytes[i+8])
-			dest := bytesToUint32(b.Bytes[i+9], b.Bytes[i+10], b.Bytes[i+11], b.Bytes[i+12])
+			left := b.Bytes[i+1]
+			right := b.Bytes[i+2]
+			dest := b.Bytes[i+3]
 			fmt.Printf("   %4d %-9s r%d, r%d, r%d\n", i, "DecEq", left, right, dest)
-			i += 13
+			i += 4
 		case OpcodeStrConcat:
-			left := bytesToUint32(b.Bytes[i+1], b.Bytes[i+2], b.Bytes[i+3], b.Bytes[i+4])
-			right := bytesToUint32(b.Bytes[i+5], b.Bytes[i+6], b.Bytes[i+7], b.Bytes[i+8])
-			dest := bytesToUint32(b.Bytes[i+9], b.Bytes[i+10], b.Bytes[i+11], b.Bytes[i+12])
+			left := b.Bytes[i+1]
+			right := b.Bytes[i+2]
+			dest := b.Bytes[i+3]
 			fmt.Printf("   %4d %-9s r%d, r%d, r%d\n", i, "StrConcat", left, right, dest)
-			i += 13
+			i += 4
 		case OpcodePrint:
-			source := bytesToUint32(b.Bytes[i+1], b.Bytes[i+2], b.Bytes[i+3], b.Bytes[i+4])
+			source := b.Bytes[i+1]
 			fmt.Printf("   %4d %-9s r%d\n", i, "Print", source)
-			i += 5
+			i += 2
 		case OpcodeCastToStr:
-			source := bytesToUint32(b.Bytes[i+1], b.Bytes[i+2], b.Bytes[i+3], b.Bytes[i+4])
-			dest := bytesToUint32(b.Bytes[i+5], b.Bytes[i+6], b.Bytes[i+7], b.Bytes[i+8])
+			source := b.Bytes[i+1]
+			dest := b.Bytes[i+2]
 			fmt.Printf("   %4d %-9s r%d, r%d\n", i, "CastToStr", source, dest)
-			i += 9
+			i += 3
+		case OpcodeListBuild:
+			length := bytesToUint32(b.Bytes[i+1], b.Bytes[i+2], b.Bytes[i+3], b.Bytes[i+4])
+			first := b.Bytes[i+5]
+			dest := b.Bytes[i+6]
+			fmt.Printf("   %4d %-9s %d r%d r%d\n", i, "ListBuild", length, first, dest)
+			i += 7
+		case OpcodeListAccess:
+			index := b.Bytes[i+1]
+			source := b.Bytes[i+2]
+			dest := b.Bytes[i+3]
+			fmt.Printf("   %4d %-9s r%d r%d r%d\n", i, "ListAccess", index, source, dest)
+			i += 4
+		case OpcodeListLen:
+			source := b.Bytes[i+1]
+			dest := b.Bytes[i+2]
+			fmt.Printf("   %4d %-9s r%d r%d\n", i, "ListLen", source, dest)
+			i += 3
 		default:
 			panic(fmt.Sprintf("unknown opcode 0x%x", uint8(b.Bytes[i])))
 		}

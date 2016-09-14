@@ -442,7 +442,8 @@ func (i *Interpreter) readFloat32() float32 {
 }
 
 func (inter *Interpreter) readRegister() RegisterAddress {
-	return RegisterAddress(inter.readUint32())
+	b := inter.readOpcode()
+	return RegisterAddress(b)
 }
 
 func (i *Interpreter) readBytecodeAddress() BytecodeAddress {
