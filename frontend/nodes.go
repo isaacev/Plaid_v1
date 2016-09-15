@@ -228,6 +228,42 @@ func (d *DispatchExpr) End() source.Pos {
 func (*DispatchExpr) exprNode() {}
 func (*DispatchExpr) stmtNode() {}
 
+// MethodDispatchExpr represents a function dispatch including root and any arguments
+type MethodDispatchExpr struct {
+	Root       Expr
+	Method     *IdentExpr
+	LeftParen  Token
+	Arguments  []Expr
+	RightParen Token
+	_type      Type
+}
+
+// SetType populates the `_type` field of this expression (this is done during
+// the type-checking phase)
+func (d *MethodDispatchExpr) SetType(_type Type) {
+	d._type = _type
+}
+
+// GetType returns the Type associated with this expression. This should never
+// be called before the expression has been type checked since it will return
+// `nil` in that case
+func (d *MethodDispatchExpr) GetType() Type {
+	return d._type
+}
+
+// Pos returns the starting source code position of this node
+func (d *MethodDispatchExpr) Pos() source.Pos {
+	return d.Root.Pos()
+}
+
+// End returns the terminal source code position of this node
+func (d *MethodDispatchExpr) End() source.Pos {
+	return d.RightParen.Span.End
+}
+
+func (*MethodDispatchExpr) exprNode() {}
+func (*MethodDispatchExpr) stmtNode() {}
+
 // IndexAccessExpr represents an expression to extract an element from some list
 // at a particular index
 type IndexAccessExpr struct {

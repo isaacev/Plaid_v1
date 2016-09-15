@@ -136,6 +136,33 @@ func stringifyNode(generic Node, showTypes bool) string {
 				stringifyNode(node.Root, showTypes),
 				args)
 		}
+	case *MethodDispatchExpr:
+		var args string
+
+		for i, arg := range node.Arguments {
+			args += stringifyNode(arg, showTypes)
+
+			if i < len(node.Arguments)-1 {
+				args += " "
+			}
+		}
+
+		if args == "" {
+			args = "<no args>"
+		}
+
+		if showTypes {
+			return fmt.Sprintf("[%s (%s.%s %s)]",
+				stringifyType(node),
+				stringifyNode(node.Root, showTypes),
+				stringifyNode(node.Method, showTypes),
+				args)
+		} else {
+			return fmt.Sprintf("(%s.%s %s)",
+				stringifyNode(node.Root, showTypes),
+				stringifyNode(node.Method, showTypes),
+				args)
+		}
 	case *IndexAccessExpr:
 		if showTypes {
 			return fmt.Sprintf("[%s %s at %s]",

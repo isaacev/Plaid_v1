@@ -27,6 +27,7 @@ const (
 	RParenSymbol    TokenSymbol = ")"
 	CommaSymbol     TokenSymbol = ","
 	ColonSymbol     TokenSymbol = ":"
+	DotSymbol       TokenSymbol = "."
 	IdentSymbol     TokenSymbol = "Identifier"
 	IntegerSymbol   TokenSymbol = "Integer"
 	BooleanSymbol   TokenSymbol = "Boolean"
